@@ -5,6 +5,12 @@ description: |
   防止顺手"清理"无关代码；先写复现失败测试再写修复。
   Use when reporting bugs, errors, 500s, stack traces, or "it stopped working" type issues.
   Voice triggers: "修 bug", "/bugfix-flow", "bugfix".
+version: 0.1.0
+applies_to: [all]
+priority: P1
+usage_frequency: weekly
+depends_on: [systematic-debugging]
+related: [root-cause-tracing, test-driven-development, verification-before-completion]
 ---
 
 # bugfix-flow

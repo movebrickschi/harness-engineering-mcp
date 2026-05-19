@@ -1,3 +1,10 @@
+---
+description: AI Efficiency / token saving hard rules for any IDE
+globs: []
+alwaysApply: true
+applies_to: [all]
+---
+
 # AI Efficiency · 高效执行 & 省 Token 硬规则
 
 > 与 `assets/spec/AI_EFFICIENCY.md` / `assets/skills/ai-efficiency/SKILL.md` 配套。本文件是 Cursor / Claude Code 直接消费的硬规则版本——只列**不可违反**的最小集。

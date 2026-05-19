@@ -1,6 +1,12 @@
 ---
 name: test-driven-development
+version: 0.1.0
 description: Use when implementing any feature or bugfix, before writing implementation code - write the test first, watch it fail, write minimal code to pass; ensures tests actually verify behavior by requiring failure first
+applies_to: [all]
+priority: P0
+usage_frequency: daily
+depends_on: []
+related: [systematic-debugging, testing-anti-patterns]
 ---
 
 # Test-Driven Development (TDD)
@@ -362,3 +368,13 @@ Otherwise → not TDD
 ```
 
 No exceptions without your human partner's permission.
+
+## 反例（不要这样 TDD）
+
+| 反模式 | 原因 | 正确做法 |
+|---|---|---|
+| 先实现完功能再补测试 | 测试只是装饰，没真实验证 | 严格 RED → GREEN → REFACTOR |
+| 写一个永远通过的占位测试 | 不会失败的测试 = 没测试 | 测试必须先失败再让它通过 |
+| 测试断言 `expect(true).toBe(true)` | 没断言业务行为 | 断言期望的输入输出关系 |
+| 一个测试断言 10 个行为 | 失败定位困难 | 一个 it 一个行为 |
+| 改实现后改测试期望让它过 | 颠倒了测试与实现的因果 | 改实现前先改测试期望 |

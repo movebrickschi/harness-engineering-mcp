@@ -2,6 +2,7 @@
 description: Spring Boot REST API 编码约定，涵盖统一响应、URL 规范、依赖注入、权限、异常处理等
 globs: src/main/java/**/*.java
 alwaysApply: true
+applies_to: [java-spring]
 ---
 # Spring Boot REST API 编码约定
 

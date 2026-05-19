@@ -662,6 +662,9 @@ git tag v0.1.0 && git push origin v0.1.0
 | [`docs/M2_PS1_COMPATIBILITY.md`](docs/M2_PS1_COMPATIBILITY.md) | 与原 `engineering-check.ps1` 的等价对照表 + CI 迁移指南 |
 | [`docs/M3_CURSOR_INTEGRATION.md`](docs/M3_CURSOR_INTEGRATION.md) | Cursor MCP 接入步骤 + URI 测试清单 |
 | [`docs/M4_MULTI_IDE_INTEGRATION.md`](docs/M4_MULTI_IDE_INTEGRATION.md) | Cursor / Claude Code / Codex CLI 兼容性矩阵 + npm 发布流程 |
+| [`assets/spec/AI_EFFICIENCY.md`](assets/spec/AI_EFFICIENCY.md) | LLM 高效执行 & 省 token 契约（6 铁律 / 三层缓存 / 6 KPI） |
+| [`assets/spec/PRIORITY_HIERARCHY.md`](assets/spec/PRIORITY_HIERARCHY.md) | L0–L4 规范优先级元规则与冲突裁决 |
+| [`assets/skills/INDEX.md`](assets/skills/INDEX.md) | 40 个 skill 的决策树 + 频率分布（资源 URI `harness://skills/_decision-tree`）|
 | [`CHANGELOG.md`](CHANGELOG.md) | 版本变更记录 |
 | [`assets/spec/README.md`](assets/spec/README.md) | Engineering Harness Spec 总览 |
 

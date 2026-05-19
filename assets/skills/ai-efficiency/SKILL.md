@@ -1,9 +1,12 @@
 ---
 name: ai-efficiency
 version: 0.1.0
+description: Use whenever an AI agent executes a multi-step task to save tokens, parallelize tool calls, cache prompts, and keep replies under 2000 chars
 applies_to: [all]
-depends_on: ["brainstorming", "writing-plans", "executing-plans"]
-related: ["subagent-driven-development", "find-skills"]
+priority: P0
+usage_frequency: daily
+depends_on: [brainstorming, writing-plans, executing-plans]
+related: [subagent-driven-development, find-skills]
 ---
 
 # AI Efficiency · 高效执行 & 省 Token 清单

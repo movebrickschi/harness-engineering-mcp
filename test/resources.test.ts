@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { registerRulesResources } from "../src/mcp/resources/rules.js";
+import { listRulesForStack, registerRulesResources } from "../src/mcp/resources/rules.js";
 import { registerSkillsResources } from "../src/mcp/resources/skills.js";
 import { registerSpecResources } from "../src/mcp/resources/spec.js";
 import { registerTemplatesResources } from "../src/mcp/resources/templates.js";
@@ -20,6 +20,9 @@ describe("M3 spec resources", () => {
     expect(items.some((i) => i.uri === "harness://spec/file/AI_EFFICIENCY.md")).toBe(
       true,
     );
+    expect(
+      items.some((i) => i.uri === "harness://spec/file/PRIORITY_HIERARCHY.md"),
+    ).toBe(true);
   });
 
   it("renders an index containing the 6 numbered spec files", async () => {
@@ -52,11 +55,19 @@ describe("M3 skills resources", () => {
   it("lists an index plus every built-in skill URI", () => {
     const items = provider.list();
     expect(items.some((i) => i.uri === "harness://skills/index")).toBe(true);
+    expect(items.some((i) => i.uri === "harness://skills/_decision-tree")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/dev-flow")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/bugfix-flow")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/perf-flow")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/third-party-flow")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/ai-efficiency")).toBe(true);
+  });
+
+  it("decision tree URI returns the skills INDEX.md", async () => {
+    const body = await provider.read("harness://skills/_decision-tree");
+    expect(body.mimeType).toBe("text/markdown");
+    expect(body.text).toContain("Skills Index");
+    expect(body.text).toContain("决策树");
   });
 
   it("returns JSON for the index with metadata for each skill", async () => {
@@ -96,12 +107,24 @@ describe("M3 rules resources", () => {
     expect(items.filter((i) => i.uri.endsWith(".mdc")).length).toBeGreaterThanOrEqual(10);
   });
 
-  it("renders an index containing the rule file list", async () => {
+  it("renders an index with applies_to metadata for each rule", async () => {
     const body = await provider.read("harness://rules/index");
     expect(body.mimeType).toBe("application/json");
-    const parsed = JSON.parse(body.text) as { rules: string[] };
-    expect(parsed.rules).toContain("01-post-coding-doc-generation.mdc");
+    const parsed = JSON.parse(body.text) as {
+      rules: Array<{ filename: string; appliesTo: string[] }>;
+    };
+    const names = parsed.rules.map((r) => r.filename);
+    expect(names).toContain("01-post-coding-doc-generation.mdc");
+    expect(names).toContain("16-ai-efficiency.mdc");
     expect(parsed.rules.length).toBeGreaterThanOrEqual(10);
+
+    const javaSpringRule = parsed.rules.find(
+      (r) => r.filename === "14-mybatis-plus-conventions.mdc",
+    );
+    expect(javaSpringRule?.appliesTo).toContain("java-spring");
+
+    const allRule = parsed.rules.find((r) => r.filename === "16-ai-efficiency.mdc");
+    expect(allRule?.appliesTo).toContain("all");
   });
 
   it("returns markdown for an individual rule", async () => {
@@ -114,6 +137,19 @@ describe("M3 rules resources", () => {
     await expect(provider.read("harness://rules/nope.mdc")).rejects.toThrow(
       /Rule not found/,
     );
+  });
+
+  it("listRulesForStack filters by applies_to", () => {
+    const javaSpring = listRulesForStack("java-spring");
+    const javaNames = javaSpring.map((r) => r.filename);
+    expect(javaNames).toContain("14-mybatis-plus-conventions.mdc");
+    expect(javaNames).toContain("16-ai-efficiency.mdc"); // [all]
+
+    const nodeTs = listRulesForStack("node-typescript");
+    const nodeNames = nodeTs.map((r) => r.filename);
+    expect(nodeNames).not.toContain("14-mybatis-plus-conventions.mdc");
+    expect(nodeNames).toContain("16-ai-efficiency.mdc");
+    expect(nodeNames).toContain("05-chinese-comments.mdc"); // [all]
   });
 });
 

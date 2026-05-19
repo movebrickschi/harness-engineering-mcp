@@ -2,6 +2,7 @@
 description: 所有代码必须添加中文注释
 globs: src/main/java/**/*.java
 alwaysApply: true
+applies_to: [all]
 ---
 # 中文注释编码规范
 

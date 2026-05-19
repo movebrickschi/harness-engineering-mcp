@@ -2,6 +2,7 @@
 description: 代码审查清单与技术债管理规范
 globs: src/main/java/**/*.java
 alwaysApply: true
+applies_to: [all]
 ---
 # 代码审查清单与技术债管理
 

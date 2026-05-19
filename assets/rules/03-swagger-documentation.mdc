@@ -2,6 +2,7 @@
 description: springdoc-openapi 文档注解规范，Controller 和 DTO 必须添加中文 OpenAPI 注解
 globs: src/main/java/**/*.java
 alwaysApply: true
+applies_to: [java-spring]
 ---
 # springdoc-openapi 文档注解规范
 

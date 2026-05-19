@@ -1,6 +1,7 @@
 ---
 globs: src/main/java/**/*.java
 alwaysApply: false
+applies_to: [java-spring]
 ---
 # Post-Coding Documentation Generation / 编码后文档生成
 

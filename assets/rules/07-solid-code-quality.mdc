@@ -2,6 +2,7 @@
 description: SOLID原则与防御式编程规范
 globs: **/*.java
 alwaysApply: false
+applies_to: [all]
 ---
 # SOLID原则与防御式编程
 

@@ -2,6 +2,7 @@
 description: 所有数据库表必须包含的公共字段规范（tenant_id、oem_id、deleted、created_by、updated_by、created_at、updated_at）
 globs: src/main/java/**/*.java, src/main/resources/db/migration/*.sql
 alwaysApply: true
+applies_to: [java-spring]
 ---
 
 # 数据库表公共字段规范

@@ -2,6 +2,7 @@
 description: 可观测性、结构化日志与监控埋点规范
 globs: **/*.java
 alwaysApply: false
+applies_to: [all]
 ---
 # 可观测性与日志规范
 

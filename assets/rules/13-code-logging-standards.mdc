@@ -2,6 +2,7 @@
 description: 生成 Java 代码时必须添加详实的中文注释和必要的执行日志
 globs: **/*.java
 alwaysApply: true
+applies_to: [java-spring]
 ---
 # 中文注释 + 代码执行日志规范
 

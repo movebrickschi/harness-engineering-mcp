@@ -5,6 +5,12 @@ description: |
   对比。禁止"凭感觉优化"，每个改动必须带数据证明。
   Use when optimizing for performance, page speed, web vitals, or backend latency.
   Voice triggers: "性能优化", "/perf-flow", "提速".
+version: 0.1.0
+applies_to: [all]
+priority: P1
+usage_frequency: weekly
+depends_on: []
+related: [verification-before-completion]
 ---
 
 # perf-flow

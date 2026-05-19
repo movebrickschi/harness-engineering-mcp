@@ -1,6 +1,12 @@
 ---
 name: writing-plans
+version: 0.1.0
 description: Use when design is complete and you need detailed implementation tasks for engineers with zero codebase context - creates comprehensive implementation plans with exact file paths, complete code examples, and verification steps assuming engineer has minimal domain knowledge
+applies_to: [all]
+priority: P0
+usage_frequency: daily
+depends_on: [brainstorming]
+related: [executing-plans, dev-implement]
 ---
 
 # Writing Plans
@@ -114,3 +120,13 @@ After saving the plan, offer execution choice:
 **If Parallel Session chosen:**
 - Guide them to open new session in worktree
 - **REQUIRED SUB-SKILL:** New session uses superpowers:executing-plans
+
+## 反例（不要这样写计划）
+
+| 反模式 | 原因 | 正确做法 |
+|---|---|---|
+| 只写 "实现 X 功能"，无文件 / 行号 / 验证步 | 接手人 0 上下文，无法执行 | 每步都给 file + 函数 + 行号 + 验证命令 |
+| 计划中夹大段叙述说明 | 占 token 且执行时找不到 step | 用编号列表，每步独立可勾选 |
+| "等以后再写测试" | 计划阶段就丢掉测试动作 = 实现阶段也丢 | 每个 step 都对应一条测试或验证命令 |
+| 写「实现完后再 review」 | 没有显式 checkpoint | 在 batch 之间显式插入 review 节点 |
+| 计划超过 30 步 | 太长 = 不会被遵守 | 拆 ≥ 2 个子计划，每个 ≤ 15 步 |

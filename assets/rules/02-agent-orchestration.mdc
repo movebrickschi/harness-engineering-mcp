@@ -2,6 +2,7 @@
 description: "Multi-agent Swarm orchestration rule: triggers when user mentions '编排模式', '开发并测试', '修复并测试', '编排修复', '全流程', '测试：', '补充测试', '写测试'. Tech-stack agnostic."
 globs: []
 alwaysApply: true
+applies_to: [all]
 ---
 
 # Multi-Agent Swarm Orchestration

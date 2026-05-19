@@ -6,6 +6,7 @@ import type { ResourceProvider } from "./spec.js";
 
 export function registerSkillsResources(): ResourceProvider {
   const skillsRoot = join(assetsRoot, "skills");
+  const indexMdPath = join(skillsRoot, "INDEX.md");
 
   return {
     list(): ResourceListItem[] {
@@ -17,6 +18,14 @@ export function registerSkillsResources(): ResourceProvider {
           description: "All built-in skills with metadata",
         },
       ];
+      if (existsSync(indexMdPath)) {
+        items.push({
+          uri: "harness://skills/_decision-tree",
+          name: "Skills decision tree (markdown)",
+          mimeType: "text/markdown",
+          description: "Human / AI decision tree for picking the right skill",
+        });
+      }
       for (const s of listAssetSkills()) {
         items.push({
           uri: `harness://skills/${s.name}`,
@@ -35,6 +44,16 @@ export function registerSkillsResources(): ResourceProvider {
           uri,
           mimeType: "application/json",
           text: JSON.stringify({ skills: listAssetSkills() }, null, 2),
+        };
+      }
+      if (uri === "harness://skills/_decision-tree") {
+        if (!existsSync(indexMdPath)) {
+          throw new Error("Skill decision tree (INDEX.md) is not bundled");
+        }
+        return {
+          uri,
+          mimeType: "text/markdown",
+          text: readFileSync(indexMdPath, "utf-8"),
         };
       }
       const name = uri.replace(/^harness:\/\/skills\//, "");

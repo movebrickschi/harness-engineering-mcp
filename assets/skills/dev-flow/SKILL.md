@@ -9,6 +9,12 @@ description: |
   Voice triggers: "接需求", "开始开发", "组合拳".
   Note: 阶段切片型 skills（/dev-understand、/dev-implement、/dev-ship-retro）按阶段拆分，
   与本路由按场景类型拆分的子 skill 互补；当用户明确说"只做某阶段"时优先匹配那些 skill。
+version: 0.1.0
+applies_to: [all]
+priority: P1
+usage_frequency: weekly
+depends_on: []
+related: [dev-flow-oneliner-fe, dev-flow-oneliner-be, dev-flow-doc-fe, dev-flow-doc-be, dev-flow-doc-full, bugfix-flow, refactor-flow, perf-flow, third-party-flow]
 ---
 
 # dev-flow
@@ -28,6 +34,48 @@ description: |
 无强制前置；建议在进入路由前先确认：
 - `~/Projects/_requirements/` 目录存在
 - 用户当前工作目录是项目根目录或可由 `move_agent_to_root` 切换
+
+## 决策树（路由器视图）
+
+```mermaid
+flowchart TD
+  start[用户任务] --> intent{识别 intent}
+  intent -->|bug/500/崩溃| bugfix[bugfix-flow]
+  intent -->|重构/整理| refac[refactor-flow]
+  intent -->|性能/慢| perf[perf-flow]
+  intent -->|接入/SDK| tp[third-party-flow]
+  intent -->|新功能| feat{有 PRD?}
+  feat -->|有 PRD| docFlow{开发范围}
+  feat -->|没 PRD| oneliner{开发范围}
+  feat -->|有原型项目| protoFlow{开发范围}
+
+  docFlow -->|前端| docFE[dev-flow-doc-fe]
+  docFlow -->|后端| docBE[dev-flow-doc-be]
+  docFlow -->|全栈| docFull[dev-flow-doc-full]
+
+  oneliner -->|前端| oneFE[dev-flow-oneliner-fe]
+  oneliner -->|后端| oneBE[dev-flow-oneliner-be]
+  oneliner -->|全栈| oneFull[dev-flow-oneliner-full]
+
+  protoFlow -->|前端| protoFE[dev-flow-proto-fe]
+  protoFlow -->|后端| protoBE[dev-flow-proto-be]
+  protoFlow -->|全栈| devFull[dev-flow-full]
+
+  oneFE & oneBE & oneFull --> upgrade{触发升级?}
+  upgrade -->|DB schema / 鉴权 / 支付 / >8h| forceDoc[强制升级 dev-flow-doc-*]
+  upgrade -->|否| keep[保留一句话流程]
+```
+
+**升级触发条件**（任一命中即强制 oneliner → doc）：
+
+| 信号 | 关键词 |
+|---|---|
+| DB schema | 数据库 / schema / 建表 / migration |
+| 鉴权 / 多租户 | 鉴权 / 权限 / auth / 租户 |
+| 支付 / 订单 / 钱包 | 支付 / 订单 / wallet |
+| 估算 > 8h | "大改" / "跨多模块" |
+
+> 注：本决策树即 `harness_route_task` 工具的核心逻辑；该工具会同时返回 `efficiency_hints` 帮你选完后立刻知道下一步该怎么省 token。
 
 ## 流程步骤
 

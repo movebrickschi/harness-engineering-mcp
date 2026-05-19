@@ -2,6 +2,7 @@
 description: 架构分层与DDD设计原则，约束分层依赖和领域建模
 globs: **/*.java
 alwaysApply: true
+applies_to: [java-spring]
 ---
 # 架构分层与DDD设计原则
 

@@ -2,6 +2,7 @@
 description: 企业级安全规范（OWASP Top 10、敏感数据处理）
 globs: **/*.java
 alwaysApply: false
+applies_to: [all]
 ---
 # 企业级安全规范
 

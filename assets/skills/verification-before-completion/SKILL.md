@@ -1,6 +1,12 @@
 ---
 name: verification-before-completion
+version: 0.1.0
 description: Use when about to claim work is complete, fixed, or passing, before committing or creating PRs - requires running verification commands and confirming output before making any success claims; evidence before assertions always
+applies_to: [all]
+priority: P0
+usage_frequency: daily
+depends_on: []
+related: [requesting-code-review, executing-plans]
 ---
 
 # Verification Before Completion
@@ -137,3 +143,13 @@ From 24 failure memories:
 Run the command. Read the output. THEN claim the result.
 
 This is non-negotiable.
+
+## 反例（不要这样自检）
+
+| 反模式 | 原因 | 正确做法 |
+|---|---|---|
+| 「应该没问题」/「理论上 ok」就交付 | 假设替代证据 | 必须有 typecheck/lint/test 的实际输出 |
+| 只跑了 typecheck 就说 PASS | 单一信号不够 | 三件套 + 改动影响范围的测试都跑 |
+| 测试有 1 个红，但「与本次无关」直接忽略 | 也许是新引入的 | 至少要排查到「确实无关」的证据 |
+| 跑完命令但没读输出 | 没真正校验 | 必须读到 PASS / 0 errors 才算 |
+| 自检在本地通过就不再跑 CI 之前的 harness check | 容易撞死在 CI | 提交前跑一次 `harness check --strict` |

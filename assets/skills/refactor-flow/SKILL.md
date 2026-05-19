@@ -5,6 +5,12 @@ description: |
   绿测，不允许"大爆炸式重构"。性能/行为变更属于 perf-flow / dev-flow，不在此范围。
   Use when refactoring code, cleaning up tech debt, or restructuring without behavior change.
   Voice triggers: "重构", "整理代码", "/refactor-flow".
+version: 0.1.0
+applies_to: [all]
+priority: P1
+usage_frequency: weekly
+depends_on: []
+related: [test-driven-development, using-git-worktrees, testing-anti-patterns]
 ---
 
 # refactor-flow

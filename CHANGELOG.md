@@ -2,6 +2,14 @@
 
 ## [Unreleased]
 
+### Added (post-audit optimizations · batch 1-3)
+- Rules now carry an `applies_to: [stack]` frontmatter so `harness://rules/index` returns RuleMeta `{filename, appliesTo}` objects. Java/Spring-only rules (03/04/06/08/13/14/15) are tagged `[java-spring]`; cross-stack rules (02/05/07/09/10/11/12/16) are tagged `[all]`. A new `listRulesForStack(stack)` helper filters rules for non-Java projects.
+- `assets/skills/INDEX.md` — full skill decision tree with mermaid, P0/P1/P2 buckets, daily/weekly/monthly frequency, dependency graph; exposed via the new `harness://skills/_decision-tree` URI.
+- `assets/spec/PRIORITY_HIERARCHY.md` — meta-rule that defines L0→L4 precedence (compliance → rules → spec → skill → local), conflict resolution flow, and the project-level override path. Auto-discovered as `harness://spec/file/PRIORITY_HIERARCHY.md`.
+- High-frequency skills (`brainstorming`, `writing-plans`, `executing-plans`, `systematic-debugging`, `test-driven-development`, `verification-before-completion`, `dev-flow`, `bugfix-flow`, `refactor-flow`, `perf-flow`, `ai-efficiency`) gained complete frontmatter: `version` / `applies_to` / `priority` (P0/P1) / `usage_frequency` (daily/weekly) / `depends_on` / `related`, plus an end-of-file `## 反例` section calling out top anti-patterns.
+- `dev-flow` SKILL.md now embeds a mermaid decision tree mirroring the `harness_route_task` routing logic.
+- `test/e2e-full-flow.test.ts` — cross-tool integration test that exercises init → route → load_skill → check → gate_review → upgrade_mode → check in a single tmp project to lock the M0→M4 chain.
+
 ### Added
 - `harness_check`: `run_tests` flag that actually spawns `mvn test` / `npm test` / `pytest` and reports exit code via the new `tests.exec` check id. CLI gains `--run-tests` and `--test-timeout-ms`.
 - `harness_route_task`: `modifiers` field tagging the task with `M1`–`M5` (design / UI / auth / DB / integration), plus a new `efficiency_hints` field that returns 3-6 actionable token-saving / LLM-efficiency tips derived from `assets/spec/AI_EFFICIENCY.md`.

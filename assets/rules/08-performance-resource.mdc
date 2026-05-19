@@ -2,6 +2,7 @@
 description: JVM性能优化与数据访问层规范
 globs: **/*.java
 alwaysApply: false
+applies_to: [java-spring]
 ---
 # 性能与资源管理
 

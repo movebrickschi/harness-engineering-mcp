@@ -1,6 +1,12 @@
 ---
 name: systematic-debugging
+version: 0.1.0
 description: Use when encountering any bug, test failure, or unexpected behavior, before proposing fixes - four-phase framework (root cause investigation, pattern analysis, hypothesis testing, implementation) that ensures understanding before attempting solutions
+applies_to: [all]
+priority: P0
+usage_frequency: daily
+depends_on: []
+related: [root-cause-tracing, bugfix-flow, test-driven-development]
 ---
 
 # Systematic Debugging
@@ -293,3 +299,13 @@ From debugging sessions:
 - Random fixes approach: 2-3 hours of thrashing
 - First-time fix rate: 95% vs 40%
 - New bugs introduced: Near zero vs common
+
+## 反例（不要这样调 bug）
+
+| 反模式 | 原因 | 正确做法 |
+|---|---|---|
+| 「让我再试一次看看」 | 没有假设的盲试 = 拖延 | Phase 3 显式列假设并逐一证伪 |
+| 一上来 mock 掉失败断言让测试过 | 掩盖问题，下次更难修 | 先复现 → 再定位根因 → 再修 |
+| 加 try/catch 吞掉异常就当修好了 | 真因仍在 | catch 必须有恢复策略 + 日志 |
+| 改了 5 个文件后测试通过就提交 | 不知道哪个改动起的作用 | 二分定位，最小化 diff |
+| 跳过 Phase 1（调查）直奔 Phase 4（修复）| 缺乏证据驱动 | 先看日志 / 堆栈 / 数据 |

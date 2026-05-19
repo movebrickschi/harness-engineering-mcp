@@ -2,6 +2,7 @@
 description: MyBatis-Plus ORM 使用规范，涵盖查询构造、分页、逻辑删除、多租户等
 globs: src/main/java/**/*.java
 alwaysApply: true
+applies_to: [java-spring]
 ---
 # MyBatis-Plus 使用规范
 

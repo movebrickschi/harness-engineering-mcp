@@ -2,6 +2,7 @@
 description: 可测试性设计与单元测试标准
 globs: **/*.java
 alwaysApply: false
+applies_to: [all]
 ---
 # 可测试性设计
 

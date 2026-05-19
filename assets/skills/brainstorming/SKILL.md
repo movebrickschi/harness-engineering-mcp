@@ -1,6 +1,12 @@
 ---
 name: brainstorming
+version: 0.1.0
 description: Use when creating or developing, before writing code or implementation plans - refines rough ideas into fully-formed designs through collaborative questioning, alternative exploration, and incremental validation. Don't use during clear 'mechanical' processes
+applies_to: [all]
+priority: P0
+usage_frequency: daily
+depends_on: []
+related: [writing-plans, dev-understand]
 ---
 
 # Brainstorming Ideas Into Designs
@@ -52,3 +58,13 @@ Start by understanding the current project context, then ask questions one at a 
 - **Explore alternatives** - Always propose 2-3 approaches before settling
 - **Incremental validation** - Present design in sections, validate each
 - **Be flexible** - Go back and clarify when something doesn't make sense
+
+## 反例（不要这样用）
+
+| 反模式 | 原因 | 正确做法 |
+|---|---|---|
+| 接到"加一个登录按钮"就拉 brainstorming | 机械操作，不需要探索 | 直接 dev-flow-oneliner-fe，30 秒搞定 |
+| brainstorming 阶段就开始写代码 | 探索阶段不应产物 | 只产 markdown / 草图 / 选项对比 |
+| 一上来就给"最终方案" | 没探索就跳到答案 | 至少给 2-3 个备选，让对方选 |
+| 把 brainstorming 输出当 PRD | 探索 ≠ 规范 | 探索通过后再用 writing-plans 出 PRD |
+| brainstorming 时反复加新功能 | 走样到 YAGNI 反面 | 严格收敛到最小价值 |
