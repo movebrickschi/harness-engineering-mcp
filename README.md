@@ -45,3 +45,7 @@ harness route "列表加一个状态筛选"
 ## Design
 
 See `docs/PROPOSAL.md`.
+
+## Cursor Integration
+
+See `docs/M3_CURSOR_INTEGRATION.md` for the verified Cursor MCP wiring, the per-URI manual test plan, and the known differences with Claude Code / Codex CLI.
