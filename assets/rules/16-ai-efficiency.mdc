@@ -1,0 +1,48 @@
+# AI Efficiency · 高效执行 & 省 Token 硬规则
+
+> 与 `assets/spec/AI_EFFICIENCY.md` / `assets/skills/ai-efficiency/SKILL.md` 配套。本文件是 Cursor / Claude Code 直接消费的硬规则版本——只列**不可违反**的最小集。
+
+## R1. 检索路径
+- ✅ 知道符号名 → 先 `Grep`，**禁止**直接 Read 大文件找符号
+- ✅ 知道文件名规律 → 先 `Glob`，再 Read
+- ❌ 一次 SemanticSearch 命中 ≥ 10 个文件 → 必须收紧查询，不要全读
+
+## R2. 读文件切片
+- 单次 Read **必须**带 offset/limit 当文件 > 500 行
+- 永远不要 Read 整个 `node_modules/` / `dist/` / `vendor/`
+
+## R3. 并行调用
+- 同一轮里独立的 ≥ 2 个工具调用**必须**一次性批发
+- 顺序串行调用超过 4 次 = 违规
+
+## R4. Subagent 边界
+- 检索范围 ≥ 3 文件 → 委派 subagent
+- 主会话不读完整 fixture / 大日志 / 大 JSON dump，由 subagent 摘要后回报
+
+## R5. 修改原子化
+- 一次 `StrReplace` 改动 ≤ 100 行 diff
+- 跨文件大改 → 拆 ≥ N 次小 commit，每次均可独立通过 `npm test --runRelatedTests`
+
+## R6. 验证最小化
+- 改完只跑被影响的测试子集（`--runRelatedTests` / `-pl module` / 单文件 pytest）
+- 全局 `harness check --strict --run-tests` 仅在收尾跑一次
+
+## R7. 输出
+- 每段 `reply_message` / 主对话回复 < 2000 字符；超过即拆段或表格化
+- 禁止重复粘贴 spec / rule 段落；用 URI 引用
+
+## R8. 失败处理
+- 同一 bug ≥ 3 次尝试未修 → 切 `systematic-debugging` skill，禁止「再试一下」式补丁
+- 测试红了 → 优先根因，禁止 mock 掉测试断言来过
+
+## R9. 计划与执行
+- > 3 步任务 → 必须先出 `writing-plans` skill 的明文计划
+- 用户拍板后才进入 `executing-plans` 推进
+
+## R10. 缓存
+- 不在每轮 prompt 里手抄 spec / rule / 项目 README
+- 通过 MCP 资源 URI 引用，保持 prompt 前缀稳定以命中 prompt cache
+
+---
+
+> 任何项目可以在 `harness.config.json.modules.knowledge.ai_efficiency_strict` 中关闭部分硬规则，但默认全开。

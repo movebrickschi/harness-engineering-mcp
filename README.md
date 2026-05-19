@@ -22,8 +22,9 @@
 7. [`harness.config.json` 配置](#7-harnessconfigjson-配置)
 8. [IDE 接入](#8-ide-接入)
 9. [常见场景](#9-常见场景)
-10. [开发与贡献](#10-开发与贡献)
-11. [更多文档索引](#11-更多文档索引)
+10. [AI 高效执行 & 省 Token](#10-ai-高效执行--省-token)
+11. [开发与贡献](#11-开发与贡献)
+12. [更多文档索引](#12-更多文档索引)
 
 ---
 
@@ -529,7 +530,77 @@ harness upgrade --to=mid-team
 
 ---
 
-## 10. 开发与贡献
+## 10. AI 高效执行 & 省 Token
+
+> 与「能不能做」的边界规则（`AI_AGENT_CONTRACT`）互补，这里规定「同一件事用多少 token 做完」。
+
+`harness_route_task` 的返回值新增字段 **`efficiency_hints`**，会按 skill / modifiers / forced_upgrade 给出 3-6 条立即可照做的建议：
+
+```jsonc
+{
+  "skill": "dev-flow-oneliner-be",
+  "modifiers": ["M4"],
+  "forced_upgrade": { "to": "dev-flow-doc-be", "reason": "涉及数据库 schema 变更" },
+  "efficiency_hints": [
+    "spec/rule 走 harness:// URI 引用，不要复制粘贴到 prompt 里（保持 prompt cache 命中）",
+    "DB schema 变更：先出迁移脚本 + 回滚 SQL，再写代码，禁止跳过 ADR",
+    "强制升级到 dev-flow-doc-be：保留完整 PRD + 阶段文档，禁止偷工省略",
+    "回复 < 2000 字符，表格优于散文，独立工具调用一次性批发"
+  ]
+}
+```
+
+### 10.1 完整契约 / Skill / 硬规则三件套
+
+| 文件 | 角色 |
+|---|---|
+| [`assets/spec/AI_EFFICIENCY.md`](assets/spec/AI_EFFICIENCY.md) | 设计契约：核心铁律 6 条 + 三层缓存策略 + 量化 KPI 6 项 |
+| [`assets/skills/ai-efficiency/SKILL.md`](assets/skills/ai-efficiency/SKILL.md) | 执行 skill：6 阶段（入场自检 → 检索 → 阅读 → 修改 → 验证 → 输出 → 卡住时切模式）每阶段的清单 |
+| [`assets/rules/16-ai-efficiency.mdc`](assets/rules/16-ai-efficiency.mdc) | Cursor 直接消费的 10 条不可违反硬规则 |
+
+通过 MCP 资源 URI 即可访问：
+
+```
+harness://spec/file/AI_EFFICIENCY.md
+harness://skills/ai-efficiency
+harness://rules/16-ai-efficiency.mdc
+```
+
+### 10.2 6 条核心铁律（速查）
+
+1. **先窄后宽**：先 `Grep` 精确字符串，再 `Read` offset/limit 切片，禁止上来读整个大文件
+2. **切片不全读**：单次 Read ≤ 500 行；> 500 行先 Grep 定位
+3. **并行批发**：同一轮里 ≥ 2 个独立工具调用必须一次性发出
+4. **Subagent 隔离**：检索 ≥ 3 文件 → 委派 subagent，主会话只保留摘要
+5. **短输出 + 结构化**：每段回复 ≤ 2000 字符，表格优于散文
+6. **计划与执行分离**：> 3 步任务先 `writing-plans` 出明文计划再 `executing-plans`
+
+### 10.3 三层缓存策略
+
+| 层 | 内容 | 加载方式 |
+|---|---|---|
+| L0 · System / Spec | Harness spec / rules 全集 | MCP 资源 URI 一次挂载，永不抄进 prompt |
+| L1 · Project | `harness.config.json` + SSOT + baseline | MCP 工具按需读，跨任务复用 |
+| L2 · Task | 当前 feature 的 01-06 文档 + 本轮文件 + 本轮日志 | 一次性，结束即丢 |
+
+让 L0 / L1 在 prompt cache 中常驻，每轮只让 L2 承担新增 token → cache 命中率 ≥ 60% 是合理基线。
+
+### 10.4 量化 KPI
+
+| 指标 | 期望 |
+|---|---|
+| 单次回复 ≤ 2000 字符 | ≥ 95% |
+| 工具并行率 | ≥ 60% |
+| Grep+Glob vs Read 比 | ≥ 2:1 |
+| Plan-then-execute 命中率（> 3 步任务）| ≥ 80% |
+| Prompt cache 命中率 | ≥ 60% |
+| Subagent 委派率（> 3 文件检索）| ≥ 80% |
+
+mid-team+ 项目建议把这些指标接进 `docs/DORA.md` 旁的「AI Efficiency Board」每月跟进。
+
+---
+
+## 11. 开发与贡献
 
 ### 10.1 本地开发
 
@@ -582,7 +653,7 @@ git tag v0.1.0 && git push origin v0.1.0
 
 ---
 
-## 11. 更多文档索引
+## 12. 更多文档索引
 
 | 文档 | 用途 |
 |---|---|

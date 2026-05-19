@@ -188,5 +188,47 @@ function buildResult(
     forced_upgrade: forcedUpgrade,
     suggested_next_tools: ["harness_load_skill", "harness_check"],
     modifiers,
+    efficiency_hints: efficiencyHintsFor(skill, modifiers, forcedUpgrade),
   };
+}
+
+function efficiencyHintsFor(
+  skill: string,
+  modifiers: string[],
+  forcedUpgrade: ForcedUpgrade | null,
+): string[] {
+  const hints: string[] = [];
+  hints.push(
+    "spec/rule 走 harness:// URI 引用，不要复制粘贴到 prompt 里（保持 prompt cache 命中）",
+  );
+
+  if (skill.startsWith("bugfix")) {
+    hints.push("根因优先：先 Grep 复现路径，禁止 mock 掉断言或盲打补丁");
+    hints.push("只跑被影响的测试子集（--runRelatedTests / -pl module / 单文件 pytest）");
+  } else if (skill.startsWith("refactor")) {
+    hints.push("先 Grep 找全部调用点（≤ 20 行结果），再分批 StrReplace，每步绿测");
+    hints.push("禁止一次 Write 重写多个文件；按语义单元拆 ≥ N 次原子改动");
+  } else if (skill.startsWith("perf")) {
+    hints.push("先 benchmark 立基线，单变量优化，每改一次跑一次微基准，不要凭感觉");
+  } else if (skill.startsWith("third-party")) {
+    hints.push("强制 Vendor 适配层：业务层禁直接调 SDK；沙箱跑通后再切真实");
+  } else if (skill.startsWith("dev-flow-doc") || skill.startsWith("dev-flow-full")) {
+    hints.push("≥ 3 步任务必先 writing-plans 出明文计划，禁止边想边改 10 轮往返");
+    hints.push("文件检索 ≥ 3 个时委派 subagent，主会话只保留摘要");
+  } else if (skill.startsWith("dev-flow-oneliner")) {
+    hints.push("小需求不要拉重型流程：直接 StrReplace + ReadLints + 子集测试");
+  }
+
+  if (modifiers.includes("M4")) {
+    hints.push("DB schema 变更：先出迁移脚本 + 回滚 SQL，再写代码，禁止跳过 ADR");
+  }
+  if (modifiers.includes("M3")) {
+    hints.push("鉴权变更走 Gate Review 强校验，必须人审");
+  }
+  if (forcedUpgrade) {
+    hints.push(`强制升级到 ${forcedUpgrade.to}：保留完整 PRD + 阶段文档，禁止偷工省略`);
+  }
+
+  hints.push("回复 < 2000 字符，表格优于散文，独立工具调用一次性批发");
+  return hints.slice(0, 6);
 }

@@ -239,6 +239,11 @@ export interface RouteTaskToolOutput {
   forced_upgrade: ForcedUpgrade | null;
   suggested_next_tools: string[];
   modifiers: string[];
+  /**
+   * 2-4 actionable hints derived from AI_EFFICIENCY.md so the calling agent
+   * can immediately apply token-efficient patterns to the chosen workflow.
+   */
+  efficiency_hints: string[];
 }
 
 export interface LoadSkillToolInput {

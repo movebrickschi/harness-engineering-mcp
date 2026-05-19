@@ -17,6 +17,9 @@ describe("M3 spec resources", () => {
     expect(
       items.some((i) => i.uri === "harness://spec/file/harness.config.schema.json"),
     ).toBe(true);
+    expect(items.some((i) => i.uri === "harness://spec/file/AI_EFFICIENCY.md")).toBe(
+      true,
+    );
   });
 
   it("renders an index containing the 6 numbered spec files", async () => {
@@ -53,6 +56,7 @@ describe("M3 skills resources", () => {
     expect(items.some((i) => i.uri === "harness://skills/bugfix-flow")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/perf-flow")).toBe(true);
     expect(items.some((i) => i.uri === "harness://skills/third-party-flow")).toBe(true);
+    expect(items.some((i) => i.uri === "harness://skills/ai-efficiency")).toBe(true);
   });
 
   it("returns JSON for the index with metadata for each skill", async () => {
@@ -86,6 +90,9 @@ describe("M3 rules resources", () => {
     expect(
       items.some((i) => i.uri === "harness://rules/01-post-coding-doc-generation.mdc"),
     ).toBe(true);
+    expect(items.some((i) => i.uri === "harness://rules/16-ai-efficiency.mdc")).toBe(
+      true,
+    );
     expect(items.filter((i) => i.uri.endsWith(".mdc")).length).toBeGreaterThanOrEqual(10);
   });
 
