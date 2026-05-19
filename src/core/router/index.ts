@@ -36,9 +36,36 @@ const UPGRADE_KEYWORDS = [
   { regex: /(>=?\s*8\s*h|超过\s*8\s*小时|大改|跨\s*\d+\s*模块)/i, reason: "估算工时 > 8h 或跨多模块" },
 ];
 
+const M2_NO_DESIGN = /(没有设计稿|无设计稿|没有原型|无原型)/i;
+const M1_HAS_DESIGN = /(带设计稿|有设计稿|figma|mockup|视觉稿)/i;
+const M2_UI_HINT = /(UI|页面|列表|表单|按钮|样式|组件)/i;
+const M3_AUTH = /(鉴权|权限|auth|多租户|租户|登录)/i;
+const M4_DB = /(数据库|DB|schema|表结构|数据表|建表|新增.*表|migration|flyway|liquibase)/i;
+const M5_INTEGRATION = /(只联调|联调|集成测试|对接联调|端到端联通)/i;
+
+function detectModifiers(task: string): string[] {
+  const tags = new Set<string>();
+
+  const noDesign = M2_NO_DESIGN.test(task);
+  if (noDesign) {
+    tags.add("M2");
+  } else if (M1_HAS_DESIGN.test(task)) {
+    tags.add("M1");
+  } else if (M2_UI_HINT.test(task)) {
+    tags.add("M2");
+  }
+
+  if (M3_AUTH.test(task)) tags.add("M3");
+  if (M4_DB.test(task)) tags.add("M4");
+  if (M5_INTEGRATION.test(task)) tags.add("M5");
+
+  return Array.from(tags);
+}
+
 export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToolOutput> {
   const task = input.task.trim();
   const intent = classifyIntent(task);
+  const modifiers = detectModifiers(task);
 
   let forcedUpgrade: ForcedUpgrade | null = null;
   for (const kw of UPGRADE_KEYWORDS) {
@@ -55,25 +82,25 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
         "失败复现测试",
         "修复",
         "回归测试",
-      ]);
+      ], null, modifiers);
     case "refactor":
       return buildResult("refactor-flow", "重构", [
         "重构边界说明",
         "关键路径测试覆盖",
         "行为零变化证据",
-      ]);
+      ], null, modifiers);
     case "perf":
       return buildResult("perf-flow", "性能优化", [
         "benchmark 基线",
         "profile 证据",
         "单变量优化结果对比",
-      ]);
+      ], null, modifiers);
     case "third-party":
       return buildResult("third-party-flow", "第三方接入", [
         "Vendor 适配层",
         "密钥/Webhook 安全审计",
         "沙箱 + 失败重放剧本",
-      ]);
+      ], null, modifiers);
     case "feature":
     default: {
       const scope = input.context?.scope ?? inferScope(task);
@@ -87,7 +114,7 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
             : scope === "backend"
               ? "dev-flow-proto-be"
               : "dev-flow-full";
-        return buildResult(skill, "原型项目", ["MINI_PRD", "对照差异表", "切片验证"], forcedUpgrade);
+        return buildResult(skill, "原型项目", ["MINI_PRD", "对照差异表", "切片验证"], forcedUpgrade, modifiers);
       }
       if (hasPrd) {
         const skill =
@@ -101,6 +128,7 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
           "完整 PRD",
           ["阶段文档 01-06", "Gate Review", "Code Review", "测试报告"],
           forcedUpgrade,
+          modifiers,
         );
       }
       const skill =
@@ -114,6 +142,7 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
         "一句话需求",
         ["MINI_PRD", "IMPACT_ANALYSIS", "API_CONTRACT(if needed)"],
         forcedUpgrade,
+        modifiers,
       );
       if (forcedUpgrade) {
         oneliner.forced_upgrade = {
@@ -149,6 +178,7 @@ function buildResult(
   weight: string,
   deliverables: string[],
   forcedUpgrade: ForcedUpgrade | null = null,
+  modifiers: string[] = [],
 ): RouteTaskToolOutput {
   return {
     skill,
@@ -157,5 +187,6 @@ function buildResult(
     deliverables,
     forced_upgrade: forcedUpgrade,
     suggested_next_tools: ["harness_load_skill", "harness_check"],
+    modifiers,
   };
 }

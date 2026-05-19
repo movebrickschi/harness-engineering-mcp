@@ -230,6 +230,7 @@ export interface RouteTaskToolOutput {
   deliverables: string[];
   forced_upgrade: ForcedUpgrade | null;
   suggested_next_tools: string[];
+  modifiers: string[];
 }
 
 export interface LoadSkillToolInput {
