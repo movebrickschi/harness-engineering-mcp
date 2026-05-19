@@ -92,6 +92,43 @@ const CHECKS: CheckRunner[] = [
     },
   },
   {
+    category: "tests",
+    id: "tests.directory",
+    run: (cwd) => {
+      const candidates = ["test", "tests", "src/test"];
+      const found = candidates.find((rel) => existsSync(join(cwd, rel)));
+      return found
+        ? ok("tests", "tests.directory", `测试目录 ${found} 存在`)
+        : warn("tests", "tests.directory", "未发现 test/tests/src/test 目录");
+    },
+  },
+  {
+    category: "tests",
+    id: "tests.command",
+    run: (cwd) => {
+      const cfg = safeLoadConfig(cwd);
+      if (cfg?.project.stack === "node-typescript") {
+        const pkg = safeReadJson<{ scripts?: Record<string, string> }>(join(cwd, "package.json"));
+        return pkg?.scripts?.test
+          ? ok("tests", "tests.command", `npm test 已配置: ${pkg.scripts.test}`)
+          : warn("tests", "tests.command", "package.json 未配置 scripts.test");
+      }
+      if (cfg?.project.stack === "java-spring") {
+        return existsSync(join(cwd, "pom.xml")) ||
+          existsSync(join(cwd, "build.gradle")) ||
+          existsSync(join(cwd, "build.gradle.kts"))
+          ? ok("tests", "tests.command", "Java 构建文件存在，可执行 Maven/Gradle 测试")
+          : warn("tests", "tests.command", "未发现 Maven/Gradle 构建文件");
+      }
+      if (cfg?.project.stack === "python") {
+        return existsSync(join(cwd, "pyproject.toml")) || existsSync(join(cwd, "requirements.txt"))
+          ? ok("tests", "tests.command", "Python 项目清单存在，可接入 pytest")
+          : warn("tests", "tests.command", "未发现 Python 项目清单");
+      }
+      return warn("tests", "tests.command", "无法根据当前 stack 推断测试命令");
+    },
+  },
+  {
     category: "baseline",
     id: "baseline.exists",
     run: (cwd) =>
@@ -102,6 +139,24 @@ const CHECKS: CheckRunner[] = [
             "baseline.exists",
             "缺少 verification_baseline.json，建议 harness init 重生成",
           ),
+  },
+  {
+    category: "baseline",
+    id: "baseline.valid",
+    run: (cwd) => {
+      const baselinePath = join(cwd, "verification_baseline.json");
+      if (!existsSync(baselinePath)) {
+        return warn("baseline", "baseline.valid", "verification_baseline.json 缺失，跳过解析");
+      }
+      const baseline = safeReadJson<Record<string, unknown>>(baselinePath);
+      if (!baseline) {
+        return fail("baseline", "baseline.valid", "verification_baseline.json 不是合法 JSON");
+      }
+      if (typeof baseline.version !== "string") {
+        return fail("baseline", "baseline.valid", "verification_baseline.version 缺失");
+      }
+      return ok("baseline", "baseline.valid", `baseline version=${baseline.version}`);
+    },
   },
   {
     category: "docs",
@@ -182,6 +237,14 @@ function safeLoadConfig(cwd: string) {
   }
 }
 
+function safeReadJson<T>(path: string): T | null {
+  try {
+    return JSON.parse(readFileSync(path, "utf-8")) as T;
+  } catch {
+    return null;
+  }
+}
+
 function walk(root: string, maxDepth: number, depth = 0, acc: string[] = []): string[] {
   if (depth > maxDepth) return acc;
   try {
@@ -198,5 +261,3 @@ function walk(root: string, maxDepth: number, depth = 0, acc: string[] = []): st
   return acc;
 }
 
-// imports cleaned up at top; readFileSync currently unused — kept for future content-based checks
-void readFileSync;

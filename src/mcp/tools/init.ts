@@ -1,4 +1,4 @@
-import { mkdirSync, writeFileSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import type {
   InitToolInput,
@@ -10,6 +10,8 @@ import type {
 import type { ToolDefinition } from "../../types/mcp.js";
 import { scanProject } from "../../core/scanner/index.js";
 import { defaultConfigForMode } from "../../core/config/loader.js";
+import { readAsset } from "../../core/assets.js";
+import { renderTemplate } from "../../core/renderer/handlebars.js";
 
 const inputSchema = {
   type: "object",
@@ -93,6 +95,8 @@ export function registerInitTool(): ToolDefinition<InitToolInput, InitToolOutput
         stack: stack!,
         project_type: projectType!,
         project_name: projectName!,
+        maturity_target: input.maturity_target ?? "L1",
+        compliance: input.compliance ?? [],
         dry_run: input.dry_run === true,
       });
 
@@ -117,6 +121,8 @@ async function generateProjectFiles(args: {
   stack: NonNullable<InitToolInput["stack"]>;
   project_type: NonNullable<InitToolInput["project_type"]>;
   project_name: string;
+  maturity_target: NonNullable<InitToolInput["maturity_target"]>;
+  compliance: NonNullable<InitToolInput["compliance"]>;
   dry_run: boolean;
 }): Promise<GeneratedFile[]> {
   const config = defaultConfigForMode(args.mode, {
@@ -124,9 +130,21 @@ async function generateProjectFiles(args: {
     type: args.project_type,
     stack: args.stack,
     mode: args.mode,
+    maturity_target: args.maturity_target,
   });
+  config.$schema = "harness://config/schema";
+  if (args.compliance.length > 0) {
+    config.modules.security = {
+      ...config.modules.security,
+      compliance: args.compliance,
+    };
+  }
 
   const files: GeneratedFile[] = [];
+  const templateData = {
+    ...args,
+    date: new Date().toISOString().slice(0, 10),
+  };
 
   files.push(
     writeOrPlan(
@@ -143,12 +161,12 @@ async function generateProjectFiles(args: {
       JSON.stringify(
         {
           version: "1.0",
-          created_at: new Date().toISOString(),
+          created_at: existingBaselineCreatedAt(args.cwd) ?? new Date().toISOString(),
           mode: args.mode,
           stack: args.stack,
           tests: { class_count: 0, method_count: 0 },
           coverage: { baseline: 0.0, hard_gate: false },
-          checks: { count: 7 },
+          checks: { count: 11 },
         },
         null,
         2,
@@ -159,8 +177,24 @@ async function generateProjectFiles(args: {
   files.push(
     writeOrPlan(
       args.cwd,
+      "engineering-check.ps1",
+      await renderAssetTemplate("templates/entry/engineering-check.ps1.hbs", templateData),
+      args.dry_run,
+    ),
+  );
+  files.push(
+    writeOrPlan(
+      args.cwd,
+      "engineering-check.sh",
+      await renderAssetTemplate("templates/entry/engineering-check.sh.hbs", templateData),
+      args.dry_run,
+    ),
+  );
+  files.push(
+    writeOrPlan(
+      args.cwd,
       "docs/engineering-harness.md",
-      renderSsotMd(args),
+      await renderAssetTemplate("templates/entry/engineering-harness.md.hbs", templateData),
       args.dry_run,
     ),
   );
@@ -168,7 +202,7 @@ async function generateProjectFiles(args: {
     writeOrPlan(
       args.cwd,
       "docs/adr/0001-engineering-harness-baseline.md",
-      renderAdrBaseline(args),
+      await renderAssetTemplate("templates/adr/0001-engineering-harness-baseline.md.hbs", templateData),
       args.dry_run,
     ),
   );
@@ -180,7 +214,53 @@ async function generateProjectFiles(args: {
       args.dry_run,
     ),
   );
+
+  for (const rel of [
+    "README.md",
+    "01_REQUIREMENT_ANALYSIS.md",
+    "02_SOLUTION_DESIGN.md",
+    "03_GATE_REVIEW.md",
+    "04_DEVELOPMENT.md",
+    "05_CODE_REVIEW.md",
+    "06_TEST_REPORT.md",
+  ]) {
+    files.push(
+      writeOrPlan(
+        args.cwd,
+        `docs/features/_template/${rel}`,
+        await readAsset(`templates/features/_template/${rel}`),
+        args.dry_run,
+      ),
+    );
+  }
+
+  files.push(
+    writeOrPlan(
+      args.cwd,
+      ".github/pull_request_template.md",
+      await readAsset("templates/pr/pull_request_template.md"),
+      args.dry_run,
+    ),
+  );
   return files;
+}
+
+function existingBaselineCreatedAt(cwd: string): string | null {
+  const baselinePath = join(cwd, "verification_baseline.json");
+  if (!existsSync(baselinePath)) return null;
+  try {
+    const baseline = JSON.parse(readFileSync(baselinePath, "utf-8")) as { created_at?: unknown };
+    return typeof baseline.created_at === "string" ? baseline.created_at : null;
+  } catch {
+    return null;
+  }
+}
+
+async function renderAssetTemplate(
+  assetPath: string,
+  data: Record<string, unknown>,
+): Promise<string> {
+  return renderTemplate(await readAsset(assetPath), data);
 }
 
 function writeOrPlan(
@@ -194,59 +274,18 @@ function writeOrPlan(
   if (dryRun) {
     return { path: rel, action: "skipped", bytes, reason: "dry_run" };
   }
+  if (existsSync(abs)) {
+    const current = readFileSync(abs, "utf-8");
+    if (current === content) {
+      return { path: rel, action: "skipped", bytes, reason: "unchanged" };
+    }
+    mkdirSync(dirname(abs), { recursive: true });
+    writeFileSync(abs, content, "utf-8");
+    return { path: rel, action: "updated", bytes };
+  }
   mkdirSync(dirname(abs), { recursive: true });
   writeFileSync(abs, content, "utf-8");
   return { path: rel, action: "created", bytes };
-}
-
-function renderSsotMd(args: {
-  project_name: string;
-  mode: HarnessMode;
-  stack: string;
-}): string {
-  return `# Engineering Harness · ${args.project_name}
-
-> 项目内 SSOT 入口。完整规范见 MCP 资源 \`harness://spec/${args.mode}\`。
->
-> Mode: \`${args.mode}\` · Stack: \`${args.stack}\` · Harness Version: \`0.1.0\`
-
-## 1. 任务路由
-任何新任务先调用 MCP 工具 \`harness_route_task({task: "..."})\`，按返回的 skill 执行。
-
-## 2. 本地门禁
-提交前调用 \`harness_check\`，必须 PASS（strict 模式 WARN 也算 FAIL）。
-
-## 3. 任务记忆
-所有需求与 Bug 进入 \`docs/features/INDEX.md\` 并建立对应阶段文档目录。
-
-## 4. ADR
-架构变更、DB 表设计、第三方依赖引入必须配 ADR，存放在 \`docs/adr/\`。
-
-## 5. 升档零迁移
-团队规模成长后运行 \`harness_upgrade_mode({to: "small-team" | "mid-team" | "org"})\`，自动补齐增量文件。
-`;
-}
-
-function renderAdrBaseline(args: { project_name: string; mode: HarnessMode }): string {
-  return `# ADR 0001 · Engineering Harness Baseline
-
-- **Date**: ${new Date().toISOString().slice(0, 10)}
-- **Status**: Accepted
-
-## Context
-项目 \`${args.project_name}\` 接入 Engineering Harness（mode=${args.mode}）以建立从需求到发布的工程治理基线。
-
-## Decision
-- 采用 Harness Engineering MCP 作为工程治理基座
-- 配置文件 \`harness.config.json\` 作为机器可读契约
-- 任务通过 \`harness_route_task\` 路由到对应 skill
-- 提交前必须 \`harness_check\` PASS
-
-## Consequences
-- 所有规范、skill、模板通过 MCP 资源实时供给，无需复制
-- 升档（solo→small-team→mid-team→org）零迁移成本
-- 与现有 IDE（Cursor / Claude Code / Codex）互不冲突
-`;
 }
 
 function renderFeaturesIndex(args: { project_name: string }): string {

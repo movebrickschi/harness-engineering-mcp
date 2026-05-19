@@ -8,8 +8,14 @@ export default defineConfig({
     coverage: {
       provider: "v8",
       reporter: ["text", "json", "html"],
-      include: ["src/**/*.ts"],
-      exclude: ["src/types/**", "src/**/index.ts"],
+      include: ["src/core/**/*.ts", "src/mcp/tools/init.ts", "src/mcp/tools/check.ts"],
+      exclude: ["src/types/**"],
+      thresholds: {
+        statements: 70,
+        lines: 70,
+        functions: 70,
+        branches: 50,
+      },
     },
   },
 });
