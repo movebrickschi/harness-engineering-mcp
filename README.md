@@ -46,9 +46,10 @@ harness route "列表加一个状态筛选"
 
 See `docs/PROPOSAL.md`.
 
-## Cursor Integration
+## IDE Integration
 
-See `docs/M3_CURSOR_INTEGRATION.md` for the verified Cursor MCP wiring, the per-URI manual test plan, and the known differences with Claude Code / Codex CLI.
+- Cursor: see `docs/M3_CURSOR_INTEGRATION.md` for the verified MCP wiring and per-URI manual test plan.
+- Claude Code / Codex CLI: see `docs/M4_MULTI_IDE_INTEGRATION.md` for the compatibility matrix and minimal repro scripts.
 
 ## PS1 Compatibility
 
@@ -56,3 +57,9 @@ See `docs/M3_CURSOR_INTEGRATION.md` for the verified Cursor MCP wiring, the per-
 PASS/WARN/FAIL token set and `check_id` namespace are stable; see
 `docs/M2_PS1_COMPATIBILITY.md` for the equivalence table and the
 `--run-tests` flag that turns the static checker into a real test runner.
+
+## Release
+
+See `docs/M4_MULTI_IDE_INTEGRATION.md` §6 for the `v0.1.0` npm publish
+checklist and post-publish smoke steps. The actual `npm publish` command
+must be executed by an authenticated maintainer.

@@ -1,7 +1,8 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { join, relative, sep } from "node:path";
 import type { GateReviewToolInput, GateReviewToolOutput } from "../../types/harness.js";
 import type { ToolDefinition } from "../../types/mcp.js";
+import { assetsRoot } from "../../core/assets.js";
 
 const inputSchema = {
   type: "object",
@@ -20,26 +21,27 @@ export function registerGateReviewTool(): ToolDefinition<
   return {
     name: "harness_gate_review",
     description:
-      "Generate or check 03_GATE_REVIEW.md for a feature. action=generate creates the review entry; action=check parses an existing file and returns blockers + pass/fail state.",
+      "Generate or check 03_GATE_REVIEW.md for a feature. action=generate creates the review entry from the bundled 8-dimension template; action=check parses an existing file and returns BLOCKER list, conditional items, and pass/fail state.",
     inputSchema: inputSchema as unknown as Record<string, unknown>,
     handler: async (input) => {
       const featureDir = join(input.cwd, "docs/features", input.feature_name);
       const target = join(featureDir, "03_GATE_REVIEW.md");
       const action = input.action ?? "generate";
+      const filePathOut = toPortablePath(input.cwd, target);
 
       if (action === "generate") {
         mkdirSync(featureDir, { recursive: true });
         if (existsSync(target)) {
           return {
             status: "generated",
-            file_path: target.replace(input.cwd + "\\", "").replace(input.cwd + "/", ""),
+            file_path: filePathOut,
             blockers: ["existing file kept — append your sections instead of overwriting"],
           };
         }
         writeFileSync(target, renderGateReview(input.feature_name), "utf-8");
         return {
           status: "generated",
-          file_path: target.replace(input.cwd + "\\", "").replace(input.cwd + "/", ""),
+          file_path: filePathOut,
           blockers: [],
         };
       }
@@ -47,63 +49,130 @@ export function registerGateReviewTool(): ToolDefinition<
       if (!existsSync(target)) {
         return {
           status: "blocked",
-          file_path: target.replace(input.cwd + "\\", "").replace(input.cwd + "/", ""),
+          file_path: filePathOut,
           blockers: ["03_GATE_REVIEW.md 不存在，请先 action=generate"],
         };
       }
       const content = readFileSync(target, "utf-8");
-      const blockers = extractBlockers(content);
+      const analysis = analyzeGateReview(content);
       return {
-        status: blockers.length === 0 ? "passed" : "blocked",
-        file_path: target.replace(input.cwd + "\\", "").replace(input.cwd + "/", ""),
-        blockers,
+        status: analysis.blockers.length > 0
+          ? "blocked"
+          : analysis.passedExplicitly
+            ? "passed"
+            : "blocked",
+        file_path: filePathOut,
+        blockers: analysis.blockers,
       };
     },
   };
 }
 
+function toPortablePath(cwd: string, abs: string): string {
+  const rel = relative(cwd, abs) || abs;
+  return rel.split(sep).join("/");
+}
+
 function renderGateReview(featureName: string): string {
-  return `# 03 · Gate Review · ${featureName}
+  const templatePath = join(
+    assetsRoot,
+    "templates",
+    "features",
+    "_template",
+    "03_GATE_REVIEW.md",
+  );
+  const today = new Date().toISOString().slice(0, 10);
+  const base = existsSync(templatePath)
+    ? readFileSync(templatePath, "utf-8")
+    : EMBEDDED_GATE_REVIEW;
 
-> 开发前闸门评估。所有 BLOCKER 标记的事项必须解决后才能进入实现。
-
-## 1. 评审输入清单
-- [ ] 需求分析 (\`01_REQUIREMENT_ANALYSIS.md\`) 已完成
-- [ ] 方案设计 (\`02_SOLUTION_DESIGN.md\`) 已完成
-- [ ] API 契约 (如适用) 已定义
-- [ ] DB 方案 (如适用) 已定义
-- [ ] 影响分析 (\`IMPACT_ANALYSIS.md\`) 已完成
-
-## 2. 评审维度
-
-| 维度 | 评估 | 备注 |
-|---|---|---|
-| 范围明确 | ☐ Pass / ☐ Warn / ☐ Block | |
-| 验收清晰 | ☐ Pass / ☐ Warn / ☐ Block | |
-| 测试可达 | ☐ Pass / ☐ Warn / ☐ Block | |
-| 性能可控 | ☐ Pass / ☐ Warn / ☐ Block | |
-| 安全合规 | ☐ Pass / ☐ Warn / ☐ Block | |
-| 回滚预案 | ☐ Pass / ☐ Warn / ☐ Block | |
-
-## 3. Blockers
-
-> 列出所有阻塞项。任一项未解决禁止进入实现。
-
-- BLOCKER: (示例) 缺少回滚 SQL
-
-## 4. 结论
-☐ 通过  ☐ 有条件通过  ☐ 不通过
-
-## 5. 评审签字
-- 评审人:
-- 日期:
-`;
+  return [
+    `# 03 · Gate Review · ${featureName}`,
+    "",
+    `> Feature 名称：\`${featureName}\``,
+    `> 创建日期：${today}`,
+    "",
+    base,
+    "",
+    "## Blockers",
+    "",
+    "> 列出所有 BLOCKER。任一项未解决禁止进入实现。",
+    "- BLOCKER: (示例) 缺少回滚 SQL",
+    "",
+  ].join("\n");
 }
 
-function extractBlockers(content: string): string[] {
+interface GateReviewAnalysis {
+  blockers: string[];
+  conditionals: string[];
+  passedExplicitly: boolean;
+}
+
+function analyzeGateReview(content: string): GateReviewAnalysis {
   const lines = content.split(/\r?\n/);
-  return lines
-    .filter((l) => /^\s*[-*]\s*BLOCKER:/i.test(l))
-    .map((l) => l.replace(/^\s*[-*]\s*BLOCKER:\s*/i, "").trim())
-    .filter((s) => !s.startsWith("(示例)"));
+  const blockers: string[] = [];
+  const conditionals: string[] = [];
+  for (const line of lines) {
+    if (/^\s*[-*]\s*BLOCKER\s*[:：]/i.test(line)) {
+      const text = line.replace(/^\s*[-*]\s*BLOCKER\s*[:：]\s*/i, "").trim();
+      if (text && !text.startsWith("(示例)") && !/^B-\d+/.test(text)) {
+        blockers.push(text);
+      }
+    } else if (/^\s*[-*]\s*CONDITIONAL\s*[:：]/i.test(line)) {
+      const text = line.replace(/^\s*[-*]\s*CONDITIONAL\s*[:：]\s*/i, "").trim();
+      if (text && !text.startsWith("(示例)")) conditionals.push(text);
+    }
+  }
+
+  const tableBlockers = parseStructuredBlockers(content);
+  for (const b of tableBlockers) blockers.push(b);
+
+  const passedExplicitly = /^[\s-]*\[\s*[xX✓✔]\s*\]\s*通过/m.test(content);
+
+  return {
+    blockers: dedupe(blockers),
+    conditionals: dedupe(conditionals),
+    passedExplicitly,
+  };
 }
+
+function parseStructuredBlockers(content: string): string[] {
+  const sectionMatch = content.match(/##\s*3\.[^\n]*Blocker[^\n]*([\s\S]*?)(?=##\s*4\.|$)/i);
+  if (!sectionMatch) return [];
+  const section = sectionMatch[1] ?? "";
+  const found: string[] = [];
+  const tableRowRe = /^\|\s*B-\d+\s*\|\s*([^|]+?)\s*\|\s*[^|]*\|\s*[^|]*\|\s*$/gm;
+  let m: RegExpExecArray | null;
+  while ((m = tableRowRe.exec(section))) {
+    const desc = (m[1] ?? "").trim();
+    if (desc && desc !== "…" && desc !== "..." && desc !== "...") {
+      found.push(desc);
+    }
+  }
+  return found;
+}
+
+function dedupe<T>(arr: T[]): T[] {
+  return Array.from(new Set(arr));
+}
+
+const EMBEDDED_GATE_REVIEW = `# 03 Gate Review
+
+> Fallback template used only when assets/templates/features/_template/03_GATE_REVIEW.md is missing.
+
+## 2. 8 维度审查
+| 维度 | 检查点 | 结论 |
+| --- | --- | --- |
+| 需求清晰度 | 目标 / 验收 / 边界是否明确 | PASS / WARN / FAIL |
+| 数据安全 | 鉴权 / 权限 / 租户 / 敏感信息 | … |
+
+## 3. 阻塞项（Blocker）
+| 编号 | 描述 | 退回阶段 | 必改原因 |
+| --- | --- | --- | --- |
+| B-1 | … | 需求 / 方案 | … |
+
+## 6. 评审结论
+- [ ] 通过
+- [ ] 有条件通过
+- [ ] 不通过
+`;
