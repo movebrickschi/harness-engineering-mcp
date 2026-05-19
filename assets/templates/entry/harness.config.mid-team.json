@@ -1,0 +1,50 @@
+{
+  "$schema": "harness://config/schema",
+  "version": "1.0",
+  "project": {
+    "name": "{{project_name}}",
+    "type": "{{project_type}}",
+    "stack": "{{stack}}",
+    "mode": "mid-team",
+    "team_size": "5-15",
+    "maturity_target": "L3"
+  },
+  "modules": {
+    "people": {
+      "branch_strategy": "github-flow",
+      "pr_max_lines": 600,
+      "pr_max_files": 25,
+      "review_sla_hours": 12,
+      "codeowners_enabled": true,
+      "oncall_enabled": true
+    },
+    "process": {
+      "gate_review_enabled": true,
+      "rollback_routing_enabled": true,
+      "emergency_channel_enabled": true
+    },
+    "quality": {
+      "coverage_baseline": 0.6,
+      "coverage_hard_gate": true
+    },
+    "release": {
+      "semver": true,
+      "changelog": true,
+      "feature_flags": true,
+      "slo_enabled": true,
+      "rollback_runbook_required": true
+    },
+    "security": {
+      "secret_scan": true,
+      "sca_on_pr": true,
+      "sbom_required": false,
+      "data_classification_enabled": true
+    },
+    "knowledge": {
+      "feature_board": true,
+      "onboarding_path": true,
+      "post_mortem_required": true,
+      "adr_required_for": ["架构变更", "DB 表设计", "第三方依赖引入"]
+    }
+  }
+}

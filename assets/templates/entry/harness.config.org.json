@@ -1,0 +1,55 @@
+{
+  "$schema": "harness://config/schema",
+  "version": "1.0",
+  "project": {
+    "name": "{{project_name}}",
+    "type": "{{project_type}}",
+    "stack": "{{stack}}",
+    "mode": "org",
+    "team_size": "30+",
+    "maturity_target": "L4"
+  },
+  "modules": {
+    "people": {
+      "branch_strategy": "github-flow",
+      "pr_max_lines": 800,
+      "pr_max_files": 30,
+      "review_sla_hours": 8,
+      "codeowners_enabled": true,
+      "oncall_enabled": true
+    },
+    "process": {
+      "gate_review_enabled": true,
+      "rollback_routing_enabled": true,
+      "emergency_channel_enabled": true
+    },
+    "quality": {
+      "coverage_baseline": 0.75,
+      "coverage_hard_gate": true
+    },
+    "release": {
+      "semver": true,
+      "changelog": true,
+      "feature_flags": true,
+      "slo_enabled": true,
+      "rollback_runbook_required": true
+    },
+    "security": {
+      "secret_scan": true,
+      "sca_on_pr": true,
+      "sbom_required": true,
+      "data_classification_enabled": true,
+      "audit_log_required": true
+    },
+    "knowledge": {
+      "feature_board": true,
+      "onboarding_path": true,
+      "post_mortem_required": true,
+      "adr_required_for": ["架构变更", "DB 表设计", "第三方依赖引入", "破坏性 API 变更", "数据合规调整"]
+    }
+  },
+  "dora": {
+    "track": true,
+    "metrics": ["deployment_frequency", "lead_time", "change_failure_rate", "mttr"]
+  }
+}

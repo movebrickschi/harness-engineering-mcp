@@ -1,0 +1,55 @@
+---
+description: SOLID原则与防御式编程规范
+globs: **/*.java
+alwaysApply: false
+---
+# SOLID原则与防御式编程
+
+## SOLID原则
+
+| 原则 | 规则 | 告警阈值 |
+|------|------|---------|
+| 单一职责(SRP) | 类变更理由只能有一个 | 类超过200行必须拆分 |
+| 开闭原则(OCP) | 对扩展开放，使用SPI或Conditional Bean | 禁止修改已稳定的核心逻辑 |
+| 里氏替换(LSP) | 子类增强而非改变父类行为 | 禁止继承仅为复用代码 |
+| 接口隔离(ISP) | 接口方法不超过5个 | 拆分为Role Interface |
+| 依赖倒置(DIP) | Spring注入必须面向接口 | 禁止注入具体实现类 |
+
+## 防御式编程
+
+### 空值防御
+
+```java
+// ✅ 使用Optional
+public Optional<User> findByEmail(String email) { }
+
+// ✅ 使用@NonNull注解
+public void process(@NonNull Order order) { }
+
+// ❌ 禁止裸返回null
+public User findByEmail(String email) { return null; }
+```
+
+### 输入验证
+
+- Controller层：Bean Validation（`@Valid`, `@NotBlank`, `@Size`等）
+- Domain层：Guard Clauses（方法入口处校验前置条件）
+
+### 资源释放
+
+```java
+// ✅ 必须使用try-with-resources
+try (InputStream is = new FileInputStream(file)) {
+    // ...
+}
+
+// ❌ 禁止手动close()
+InputStream is = new FileInputStream(file);
+try { /* ... */ } finally { is.close(); }
+```
+
+### 并发安全
+
+- 可变共享状态必须使用ThreadLocal或并发容器
+- 优先使用不可变对象（`final`字段）
+- 避免在Spring单例Bean中使用实例变量存储请求状态

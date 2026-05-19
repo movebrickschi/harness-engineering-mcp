@@ -1,0 +1,265 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "wechat-ai-article cover_text.json",
+  "description": "Configuration consumed by postprocess_cover.py. Each cover candidate writes its own cover_text.json into ~/wechat-articles/{dir}/ (or candidates/). Coordinates are pixels in the final 2350x1000 canvas (origin = top-left). Chinese main headline is baked into the cover via PIL; the `texts` array still carries English/numeric side-tags (brand tag, version arrow, etc.).",
+  "type": "object",
+  "required": ["archetype", "headline_cn", "canvas"],
+  "properties": {
+    "archetype": {
+      "type": "string",
+      "enum": ["A01", "A02", "A03", "A04", "A05", "A06"],
+      "description": "Which archetype composer to run. See cover-template.md. A01 Cinematic Hero, A02 Editorial Split, A03 Duotone Pressure, A04 Data Monolith, A05 Type Sculpture, A06 Magazine Index."
+    },
+    "palette": {
+      "type": "object",
+      "description": "Colors used by the composer (not by GenerateImage). Derived from the article's visual-language card Step 4.5 palette_id.",
+      "properties": {
+        "primary": {
+          "type": "string",
+          "description": "Dominant color (background for A04/A05, shadow color for A03 duotone)."
+        },
+        "accent": {
+          "type": "string",
+          "description": "Headline color / highlight color for duotone. Must contrast with primary."
+        },
+        "panel_color": {
+          "type": "string",
+          "description": "Color for the solid panel in A02 / the cream frame in A06. Defaults to accent if omitted."
+        },
+        "ink": {
+          "type": "string",
+          "description": "Dark body-text color for A06 magazine-index on cream. Defaults to #111111."
+        }
+      }
+    },
+    "headline_cn": {
+      "type": "object",
+      "description": "The Chinese main headline that gets baked into the cover. Required — this is the single biggest quality lever of the new pipeline.",
+      "required": ["text"],
+      "properties": {
+        "text": {
+          "type": "string",
+          "description": "The literal Chinese headline to render, ≤ 14 characters recommended. Examples: 重夺最强 LLM 王座 / 一次提价两成的底气 / Apple 自研 AI 芯片首亮相."
+        },
+        "font": {
+          "type": "string",
+          "description": "Font filename, e.g. msyhbd.ttc (Windows), PingFang.ttc (macOS), SourceHanSansSC-Bold.otf. Falls back automatically through msyhbd -> Source Han Sans -> Noto Sans CJK -> PingFang -> SimHei."
+        },
+        "max_size": {
+          "type": "integer",
+          "default": 140,
+          "description": "Upper bound for auto-sizing. 120-160 works for 1-line, 100-140 for 2-line. A05 Type Sculpture prefers 200-240 (sculptural)."
+        },
+        "min_size": {
+          "type": "integer",
+          "default": 72,
+          "description": "Lower bound. Do not go below 56 or the headline becomes unreadable at 300px thumbnail."
+        },
+        "line_height": {
+          "type": "number",
+          "default": 1.15,
+          "description": "Line height multiplier. 1.0 for A05 (sculptural dense), 1.15-1.25 for readable body."
+        },
+        "color": {
+          "type": "string",
+          "default": "#ffffff",
+          "description": "Headline color. Must pass WCAG AA contrast against the background region."
+        },
+        "shadow": {
+          "type": "string",
+          "description": "Optional drop shadow color (with alpha, e.g. #00000066). Used by A01 (on photograph) and A03 (on duotone)."
+        },
+        "align": {
+          "type": "string",
+          "enum": ["left", "center", "right"],
+          "default": "left",
+          "description": "Horizontal alignment within rect."
+        },
+        "rect": {
+          "type": "object",
+          "description": "Bounding rect the headline must fit inside. Each archetype has a default if omitted.",
+          "properties": {
+            "x": {"type": "integer"},
+            "y": {"type": "integer"},
+            "w": {"type": "integer"},
+            "h": {"type": "integer"}
+          }
+        },
+        "weight": {
+          "type": "string",
+          "enum": ["bold", "regular"],
+          "default": "bold",
+          "description": "Prefer bold for all headlines. Regular only for A06 if you want editorial restraint."
+        },
+        "tracking": {
+          "type": "number",
+          "default": 0.0,
+          "description": "Extra letter-spacing as em fraction. Chinese usually 0 (native kerning is fine). 0.02-0.04 opens a tiny bit for wider feel."
+        }
+      }
+    },
+    "veil": {
+      "type": "object",
+      "description": "Optional gradient veil composited on top of the hero for headline legibility. Primarily used by A01 and A03.",
+      "properties": {
+        "enabled": {"type": "boolean", "default": true},
+        "direction": {
+          "type": "string",
+          "enum": ["bottom", "top", "left", "right"],
+          "default": "bottom",
+          "description": "Where the opaque end of the gradient lives."
+        },
+        "from": {
+          "type": "string",
+          "default": "#00000000",
+          "description": "Starting color (with alpha). Usually fully transparent: #00000000."
+        },
+        "to": {
+          "type": "string",
+          "default": "#000000d0",
+          "description": "Ending color (with alpha). Use #000000cc-ee for strong legibility, #00000066-88 for subtle."
+        },
+        "start_ratio": {
+          "type": "number",
+          "default": 0.4,
+          "description": "Fraction of the canvas on the 'from' side that stays fully transparent before the ramp begins. 0.4 means the top 40% is untouched."
+        }
+      }
+    },
+    "duotone": {
+      "type": "object",
+      "description": "Used only by A03. Two hex colors forming a luminance ramp.",
+      "properties": {
+        "shadow": {"type": "string", "description": "Dark end of the duotone ramp."},
+        "highlight": {"type": "string", "description": "Light end of the duotone ramp."}
+      }
+    },
+    "canvas": {
+      "type": "object",
+      "description": "Output canvas + optional polish settings.",
+      "required": ["width", "height"],
+      "properties": {
+        "width": {"type": "integer", "default": 2350},
+        "height": {"type": "integer", "default": 1000},
+        "fit": {
+          "type": "string",
+          "enum": ["crop", "letterbox"],
+          "default": "crop",
+          "description": "Fallback fit mode when no archetype is set (legacy path). With an archetype, this is only used as a safety net if the composer returned a non-target size."
+        },
+        "letterbox_color": {"type": "string", "default": "#000000"},
+        "border_px": {
+          "type": "integer",
+          "default": 0,
+          "description": "Hairline border. 0 disables. Recommended 1 for A06 Magazine Index."
+        },
+        "border_color": {"type": "string", "default": "#000000"},
+        "noise": {
+          "type": "number",
+          "default": 0.0,
+          "minimum": 0,
+          "maximum": 0.2,
+          "description": "Film grain intensity. Typical 0.02-0.05 for A01/A03/A06. Avoid for A02/A04."
+        },
+        "vignette": {
+          "type": "number",
+          "default": 0.0,
+          "minimum": 0,
+          "maximum": 0.5,
+          "description": "Edge darkening. Typical 0.10-0.25 for A03/A05. Avoid for A02/A06."
+        },
+        "seed": {"type": "integer", "description": "Optional RNG seed for reproducible noise."}
+      }
+    },
+    "texts": {
+      "type": "array",
+      "description": "English/numeric side-tags, drawn after the CN headline. Keep to 0-3 entries. Typical roles: brand tag (top-right), numeric mark (bottom-right), version arrow.",
+      "items": {
+        "type": "object",
+        "required": ["text", "x", "y", "size"],
+        "properties": {
+          "text": {
+            "type": "string",
+            "description": "English/numbers/symbols only. Examples: 'CLAUDE OPUS', '+11 pt', '4.6 → 4.7', 'APR 2026'."
+          },
+          "x": {"type": "integer"},
+          "y": {"type": "integer"},
+          "size": {"type": "integer"},
+          "color": {"type": "string", "default": "#ffffff"},
+          "font": {
+            "type": "string",
+            "description": "Falls back through Inter -> Helvetica -> Arial -> Segoe UI -> Georgia -> DejaVuSans."
+          },
+          "tracking": {"type": "number", "default": 0.0},
+          "anchor": {
+            "type": "string",
+            "default": "lt",
+            "description": "Pillow text anchor: lt / mt / rt / lm / mm / rm / lb / mb / rb."
+          },
+          "uppercase": {"type": "boolean", "default": false}
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "archetype": "A01",
+      "palette": {
+        "primary": "#0f172a",
+        "accent": "#f6f2e8",
+        "panel_color": "#c0241d"
+      },
+      "headline_cn": {
+        "text": "重夺最强 LLM 王座",
+        "font": "msyhbd.ttc",
+        "max_size": 150,
+        "min_size": 84,
+        "color": "#f6f2e8",
+        "shadow": "#00000088",
+        "align": "left",
+        "rect": {"x": 120, "y": 660, "w": 2110, "h": 280}
+      },
+      "veil": {
+        "enabled": true,
+        "direction": "bottom",
+        "from": "#00000000",
+        "to": "#000000d0",
+        "start_ratio": 0.42
+      },
+      "canvas": {
+        "width": 2350,
+        "height": 1000,
+        "fit": "crop",
+        "border_px": 0,
+        "noise": 0.025,
+        "vignette": 0.12
+      },
+      "texts": [
+        {"text": "CLAUDE OPUS", "x": 2230, "y": 120, "size": 56, "color": "#f6f2e8", "font": "arialbd.ttf", "tracking": 0.20, "anchor": "rt", "uppercase": true},
+        {"text": "4.6 → 4.7", "x": 2230, "y": 200, "size": 34, "color": "#f6f2e8", "font": "arial.ttf", "tracking": 0.16, "anchor": "rt"}
+      ]
+    },
+    {
+      "archetype": "A02",
+      "palette": {
+        "primary": "#1c2e83",
+        "accent": "#f6f2e8",
+        "panel_color": "#1c2e83"
+      },
+      "headline_cn": {
+        "text": "重夺最强 LLM 王座",
+        "font": "msyhbd.ttc",
+        "max_size": 130,
+        "min_size": 72,
+        "color": "#f6f2e8",
+        "align": "left",
+        "rect": {"x": 90, "y": 320, "w": 713, "h": 460}
+      },
+      "canvas": {"width": 2350, "height": 1000, "fit": "crop"},
+      "texts": [
+        {"text": "CLAUDE OPUS 4.7", "x": 90, "y": 140, "size": 34, "color": "#f6f2e8", "font": "arialbd.ttf", "tracking": 0.22, "anchor": "lt", "uppercase": true},
+        {"text": "+11 pt", "x": 90, "y": 860, "size": 56, "color": "#f6f2e8", "font": "arialbd.ttf", "tracking": 0.04, "anchor": "lt"}
+      ]
+    }
+  ]
+}

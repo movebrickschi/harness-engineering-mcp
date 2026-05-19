@@ -1,0 +1,116 @@
+---
+description: 生成 Java 代码时必须添加详实的中文注释和必要的执行日志
+globs: **/*.java
+alwaysApply: true
+---
+# 中文注释 + 代码执行日志规范
+
+## 一、中文注释要求
+
+每个类、公开方法、字段都必须有中文说明（详见 `05-chinese-comments` 规则），以下是补充强调：
+
+- 关键 `if/else` 分支必须有一句中文说明其判断意图
+- 非显而易见的常量、魔法数字必须注释说明含义
+- 不要写只是重复代码语义的废注释（如 `// 调用 insert 方法`）
+
+## 二、日志框架使用
+
+统一使用 `@Slf4j`（Lombok），禁止直接使用 `System.out.println`。
+
+```java
+// ✅ 正确
+@Slf4j
+@Service
+public class OrderService {
+    public void createOrder(...) {
+        log.info("[订单服务] 创建订单，userId={}, amount={}", userId, amount);
+    }
+}
+
+// ❌ 禁止
+System.out.println("创建订单: " + userId);
+```
+
+## 三、日志级别选择
+
+| 级别 | 使用场景 |
+|------|---------|
+| `log.info` | 写操作入口（新增/更新/删除）、关键业务节点（登录、支付、状态变更）、操作结果 |
+| `log.debug` | 读操作入口、中间过程、循环内部、查询结果 |
+| `log.warn` | 业务校验失败、数据异常、可降级的外部调用失败 |
+| `log.error` | 系统异常、需要立即处理的错误，必须附带异常对象 `log.error("...", e)` |
+
+## 四、各层日志埋点规范
+
+### Controller 层
+
+```java
+// 写操作：方法入口用 info，完成用 info
+@PostMapping
+public R<SysUser> createUser(@RequestBody SysUser user) {
+    log.info("[用户控制器] 新增用户，username={}", user.getUsername());
+    // ... 业务逻辑 ...
+    log.info("[用户控制器] 用户新增成功，userId={}", user.getId());
+    return R.ok(user);
+}
+
+// 读操作：方法入口用 debug，完成用 debug
+@GetMapping("/list")
+public R<IPage<SysUser>> list(...) {
+    log.debug("[用户控制器] 查询用户列表，page={}, size={}", page, size);
+    // ...
+    log.debug("[用户控制器] 用户列表查询完成，总数={}", result.getTotal());
+    return R.ok(result);
+}
+```
+
+### Service 层
+
+```java
+// 复杂业务流程中的关键步骤各打一条日志
+@Transactional
+public void assignRoleMenus(Long roleId, List<Long> menuIds) {
+    log.info("[菜单服务] 为角色分配菜单，roleId={}, 菜单数量={}", roleId, menuIds != null ? menuIds.size() : 0);
+
+    // 清空旧关联
+    sysRoleMenuMapper.delete(...);
+    log.debug("[菜单服务] 已清空角色原有菜单关联，roleId={}", roleId);
+
+    // 插入新关联
+    if (menuIds != null && !menuIds.isEmpty()) {
+        records.forEach(sysRoleMenuMapper::insert);
+        log.info("[菜单服务] 角色菜单分配完成，roleId={}, 分配数量={}", roleId, menuIds.size());
+    }
+}
+```
+
+### 异常处理
+
+```java
+// ✅ 业务校验失败用 warn，系统异常用 error
+if (existing == null) {
+    log.warn("[用户服务] 用户不存在，userId={}", userId);
+    throw new ResponseStatusException(HttpStatus.NOT_FOUND, "用户不存在");
+}
+
+try {
+    externalApi.call();
+} catch (Exception e) {
+    log.error("[支付服务] 调用支付网关失败，orderId={}", orderId, e);
+    throw new PaymentException("支付失败", e);
+}
+```
+
+## 五、日志内容规范
+
+- **日志前缀**：格式为 `[模块名]`，如 `[用户控制器]`、`[订单服务]`，便于 grep 过滤
+- **必须包含关键业务 ID**：userId、orderId、roleId 等，方便追踪
+- **禁止打印**：密码、Token、手机号明文、信用卡号（敏感字段脱敏或不打）
+
+```java
+// ❌ 禁止
+log.info("用户登录，password={}", password);
+
+// ✅ 正确
+log.info("[认证服务] 用户登录，username={}", username);
+```

@@ -1,0 +1,156 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.com/harness.config.schema.json",
+  "title": "Engineering Harness Project Config",
+  "description": "项目级 Harness 配置。CI/IDE/Agent/engineering-check 据此自动剪裁。",
+  "type": "object",
+  "required": ["version", "project", "modules"],
+  "properties": {
+    "$schema": { "type": "string" },
+    "version": {
+      "type": "string",
+      "description": "Harness 规范版本",
+      "examples": ["1.0"]
+    },
+    "project": {
+      "type": "object",
+      "required": ["name", "type", "stack", "mode"],
+      "properties": {
+        "name": { "type": "string" },
+        "type": {
+          "type": "string",
+          "enum": ["backend-service", "library", "cli", "frontend-spa"]
+        },
+        "stack": {
+          "type": "string",
+          "enum": ["java-spring", "node-typescript", "python", "go", "other"]
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["solo", "small-team", "mid-team", "org"],
+          "description": "项目当前规模模式；驱动 engineering-check 与文档过滤"
+        },
+        "team_size": {
+          "type": "string",
+          "enum": ["1", "2-4", "5-15", "16-30", "30+"]
+        },
+        "maturity_target": {
+          "type": "string",
+          "enum": ["L1", "L2", "L3", "L4"],
+          "description": "成熟度目标：L1 起步 / L2 标准化 / L3 度量化 / L4 自适应"
+        }
+      }
+    },
+    "modules": {
+      "type": "object",
+      "description": "各模块的项目级开关与阈值",
+      "properties": {
+        "people": {
+          "type": "object",
+          "properties": {
+            "branch_strategy": { "enum": ["trunk", "git-flow", "github-flow"] },
+            "pr_max_lines": { "type": "integer", "minimum": 1 },
+            "pr_max_files": { "type": "integer", "minimum": 1 },
+            "review_sla_hours": { "type": "integer" },
+            "codeowners_enabled": { "type": "boolean" },
+            "oncall_enabled": { "type": "boolean" }
+          }
+        },
+        "process": {
+          "type": "object",
+          "properties": {
+            "gate_review_enabled": { "type": "boolean" },
+            "rollback_routing_enabled": { "type": "boolean" },
+            "emergency_channel_enabled": { "type": "boolean" }
+          }
+        },
+        "quality": {
+          "type": "object",
+          "properties": {
+            "coverage_baseline": { "type": "number", "minimum": 0, "maximum": 1 },
+            "coverage_hard_gate": { "type": "boolean" },
+            "perf_p95_ms": { "type": "integer" },
+            "perf_lcp_ms": { "type": "integer" },
+            "bundle_size_kb": { "type": "integer" },
+            "local_check_max_seconds": { "type": "integer" }
+          }
+        },
+        "release": {
+          "type": "object",
+          "properties": {
+            "semver": { "type": "boolean" },
+            "changelog": { "type": "boolean" },
+            "feature_flags": { "type": "boolean" },
+            "slo_enabled": { "type": "boolean" },
+            "rollback_runbook_required": { "type": "boolean" }
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "secret_scan": { "type": "boolean" },
+            "sca_on_pr": { "type": "boolean" },
+            "sbom_required": { "type": "boolean" },
+            "data_classification_enabled": { "type": "boolean" },
+            "audit_log_required": { "type": "boolean" },
+            "compliance": {
+              "type": "array",
+              "items": { "enum": ["gdpr", "pipl", "iso27001", "soc2", "hipaa"] }
+            }
+          }
+        },
+        "knowledge": {
+          "type": "object",
+          "properties": {
+            "adr_required_for": {
+              "type": "array",
+              "items": { "type": "string" },
+              "examples": [["架构变更", "DB 表设计", "第三方依赖引入"]]
+            },
+            "feature_board": { "type": "boolean" },
+            "onboarding_path": { "type": "boolean" },
+            "post_mortem_required": { "type": "boolean" }
+          }
+        }
+      }
+    },
+    "ai_agent": {
+      "type": "object",
+      "description": "AI Agent 协作契约",
+      "properties": {
+        "enabled": { "type": "boolean" },
+        "auto_commit_max_lines": { "type": "integer", "default": 50 },
+        "auto_change_files_limit": { "type": "integer", "default": 1 },
+        "require_human_review_for": {
+          "type": "array",
+          "items": { "type": "string" },
+          "examples": [["api_change", "db_migration", "security", "secret"]]
+        },
+        "trace_required": { "type": "boolean", "default": true }
+      }
+    },
+    "dora": {
+      "type": "object",
+      "description": "DORA 四指标采集（L3+）",
+      "properties": {
+        "track": { "type": "boolean" },
+        "dashboard_path": { "type": "string" },
+        "metrics": {
+          "type": "array",
+          "items": { "enum": ["deployment_frequency", "lead_time", "change_failure_rate", "mttr"] }
+        }
+      }
+    },
+    "checks": {
+      "type": "object",
+      "description": "engineering-check 项目级开关，覆盖默认值",
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "enabled": { "type": "boolean" },
+          "level": { "enum": ["pass", "warn", "fail"] }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,95 @@
+{
+  "name": "harness-engineering-mcp",
+  "version": "0.1.0",
+  "description": "Engineering Harness as MCP server + CLI: ship a complete software engineering governance kit (spec, skills, rules, templates, checks) to any AI IDE (Cursor, Claude Code, Codex) with one config line.",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "engineering-harness",
+    "ai-agent",
+    "cursor",
+    "claude-code",
+    "codex",
+    "ssot",
+    "governance",
+    "skills",
+    "workflow"
+  ],
+  "author": "lcc",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "harness": "./dist/cli.js",
+    "harness-mcp": "./dist/mcp-server.js"
+  },
+  "files": [
+    "dist",
+    "assets",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    }
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "mcp": "node ./dist/mcp-server.js",
+    "mcp:dev": "tsx ./src/mcp/server.ts",
+    "cli": "node ./dist/cli.js",
+    "cli:dev": "tsx ./src/cli/index.ts",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --ext .ts --fix",
+    "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.0.4",
+    "ajv": "^8.17.1",
+    "commander": "^12.1.0",
+    "globby": "^14.0.2",
+    "handlebars": "^4.7.8",
+    "picocolors": "^1.1.1",
+    "prompts": "^2.4.2",
+    "simple-git": "^3.27.0",
+    "yaml": "^2.6.1",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.2",
+    "@types/prompts": "^2.4.9",
+    "@typescript-eslint/eslint-plugin": "^8.18.0",
+    "@typescript-eslint/parser": "^8.18.0",
+    "@vitest/coverage-v8": "^2.1.8",
+    "eslint": "^9.17.0",
+    "eslint-config-prettier": "^9.1.0",
+    "prettier": "^3.4.2",
+    "tsup": "^8.3.5",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/movebrickschi/harness-engineering-mcp.git"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

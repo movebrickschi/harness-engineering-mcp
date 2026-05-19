@@ -1,0 +1,49 @@
+---
+description: 代码审查清单与技术债管理规范
+globs: src/main/java/**/*.java
+alwaysApply: true
+---
+# 代码审查清单与技术债管理
+
+## 生成代码前自检清单
+
+每次生成或修改代码时，必须逐项检查：
+
+- [ ] **架构违规**：是否违反分层原则，Domain层是否出现Repository直接调用
+- [ ] **并发陷阱**：是否存在race condition，volatile使用是否正确，锁粒度是否过大
+- [ ] **资源泄漏**：Stream是否关闭，数据库连接是否归还，ThreadPool是否shutdown
+- [ ] **性能隐患**：大循环中是否创建对象，是否存在O(n²)算法，SQL是否走索引
+- [ ] **安全漏洞**：输入是否验证，输出是否转义，权限是否校验
+- [ ] **可维护性**：魔法数字是否提取为常量，复杂表达式是否提取为语义化方法
+
+## 技术债管理
+
+### TODO标记格式
+
+临时方案必须标记，格式如下：
+
+```java
+// TODO: TECH-DEBT-2026-001 原因：当前使用硬编码阈值 计划解决时间：Q3
+private static final int MAX_RETRY = 3;
+```
+
+### 废弃代码
+
+`@Deprecated`注解必须说明替代方案和移除版本：
+
+```java
+/**
+ * @deprecated 请使用 {@link UserServiceV2#findById}，将在 v3.0 移除
+ */
+@Deprecated(since = "2.5", forRemoval = true)
+public User getUser(Long id) { }
+```
+
+## 架构决策记录（ADR）
+
+新增技术组件必须创建 `docs/adr/NNNN-决策标题.md`，包含：
+
+- **上下文(Context)**：为什么需要这个决策
+- **决策(Decision)**：选择了什么方案
+- **后果(Consequences)**：带来的影响和代价
+- **拒绝的替代方案**：其他方案及其被拒绝的理由

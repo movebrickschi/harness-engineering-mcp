@@ -1,0 +1,189 @@
+---
+globs: src/main/java/**/*.java
+alwaysApply: false
+---
+# Post-Coding Documentation Generation / 编码后文档生成
+
+## 何时触发
+
+当一轮编码任务**完成**后（包括但不限于：新增模块、新增/修改 API、新增数据库表、新增配置项），必须在 `docs/` 目录下生成或更新一份对应的 `.md` 文档。
+
+## 文档命名
+
+- 文件路径：`docs/<module-name>.md`
+- 命名规则：使用模块名的 kebab-case 形式，如 `sys-user.md`、`wallet.md`、`ich-craft.md`
+- 如果文档已存在，在原文档上追加或更新对应章节，不要覆盖已有内容
+
+## 文档必须包含的章节
+
+### 1. 数据库脚本（如涉及）
+
+- 本项目使用 MySQL + Flyway 迁移
+- 列出本次新增或修改的 **完整建表 DDL**（`CREATE TABLE`）
+- 如果有数据初始化脚本（`INSERT`），也一并列出
+- 如果有索引变更、字段变更，列出 `ALTER TABLE` 语句
+- SQL 脚本放在 ` ```sql ` 代码块中，附带中文注释说明每个字段的用途
+- Flyway 迁移脚本路径：`src/main/resources/db/migration/`
+
+### 2. 环境变量 / 配置项（如涉及）
+
+- 以表格形式列出新增的配置项：`| 配置项 | 说明 | 默认值 | 示例 |`
+- 给出 `application.yaml` 或 Nacos 配置示例片段
+- 如果涉及新增 `@ConfigurationProperties` 绑定类，说明配置读取方式
+
+### 3. API 接口文档
+
+对每个新增或修改的 API 接口，按以下结构描述：
+
+```markdown
+### x.x 接口名称
+
+**METHOD** `/api/admin/path` 或 `/api/app/path`
+
+#### 请求体 / 请求参数
+
+（JSON 示例 + 字段说明表格）
+
+#### 响应体
+
+（JSON 示例 + 字段说明表格，统一 R<T> 格式）
+
+#### 错误响应
+
+（状态码 + 错误场景 表格）
+```
+
+### 4. 业务逻辑与实现详解（核心章节）
+
+这是文档中**最重要的章节**，目标是让任何开发者（包括不熟悉本模块的人）读完就能理解整个业务是怎么跑的。
+
+#### 4.1 每个 API 的完整调用链路
+
+对每个 API 接口，必须描述从 Controller 到 Service 到数据库的**完整调用链路**：
+
+```markdown
+#### x.x 接口名称 — 实现详解
+
+**调用链路**：
+`XxxController.methodName()` → `XxxService.methodName()` → `XxxMapper.operation()`
+
+**Controller 层**（文件：`XxxController.java`）：
+- 接收参数、鉴权方式（`@PreAuthorize` / `@PublicApi`）
+- 参数校验逻辑（`@Valid` + Bean Validation 注解）
+- 调用哪个 Service 方法
+
+**Service 层**（文件：`XxxService.java`）：
+1. **步骤一**：描述做了什么（如：校验用户权限）
+   - 关键判断条件：`if (xxx) { ... }`
+   - 涉及的数据库查询：`xxxMapper.selectOne(new LambdaQueryWrapper<>()...)`
+2. **步骤二**：描述核心业务逻辑
+   - 数据转换 / 计算逻辑
+   - 调用了哪些外部服务或工具方法
+3. **步骤三**：描述数据库写入操作
+   - 使用了事务吗？（`@Transactional`）
+   - 写入了哪些表、哪些字段
+   - 是否有级联操作
+
+**异常处理**：
+| 场景 | 抛出异常 | 错误码 | 错误信息 |
+|------|---------|--------|---------|
+| 记录不存在 | BusinessException.notFound() | 404 | 'xxx不存在' |
+| 权限不足 | AccessDeniedException | 403 | '无权限访问' |
+| 参数错误 | BusinessException.badRequest() | 400 | '具体校验信息' |
+```
+
+#### 4.2 关键业务流程图（如涉及复杂流程）
+
+对于涉及多步骤、多分支、多服务协作的复杂业务，用**文本流程图**或**编号步骤**描述完整流程。
+
+#### 4.3 核心 Service 方法签名与职责
+
+列出本模块所有 Service 的**公开方法签名**和**一句话职责说明**：
+
+```markdown
+| 方法签名 | 职责 | 被谁调用 |
+|---------|------|---------|
+| `create(LoginUser, CreateDTO): R<Entity>` | 新增记录并入库 | Controller.create |
+| `findByPage(Page, QueryDTO): IPage<VO>` | 分页查询列表 | Controller.list |
+```
+
+#### 4.4 数据库操作汇总
+
+汇总本模块所有数据库操作，方便排查性能和理解数据流向：
+
+```markdown
+| 操作 | 表 | 类型 | 条件 | 说明 |
+|------|---|------|------|------|
+| 创建记录 | xxx | INSERT | — | 写入核心字段 + BaseEntity 审计字段自动填充 |
+| 分页查询 | xxx | SELECT | tenant_id(自动) + 业务条件 | LambdaQueryWrapper 构建 |
+| 软删除 | xxx | UPDATE | id + tenant_id(自动) | @TableLogic 逻辑删除 |
+```
+
+#### 4.5 第三方服务 / 外部调用（如涉及）
+
+如果业务逻辑中调用了第三方 API（阿里云短信、支付宝、通义 DashScope 等）、Redis 缓存、ES 搜索等外部服务，必须说明：
+
+- 调用了什么服务、哪个方法
+- 请求和响应的关键字段
+- 超时、重试、降级策略
+- 回调 / Webhook 处理逻辑
+
+#### 4.6 安全设计与权限控制（如涉及）
+
+说明本模块的安全相关设计：
+
+- 鉴权方式（`@PreAuthorize("@authGuard.isSysUser()")` / `@PublicApi` / API Key）
+- 数据隔离策略（`TenantLineInnerInterceptor` 自动按 tenant_id 隔离）
+- 敏感数据处理（加密存储、脱敏展示等）
+- 防越权措施
+
+### 5. Flyway 迁移脚本（如涉及）
+
+- 列出新增的迁移脚本文件名和用途说明
+- 路径：`src/main/resources/db/migration/Vx__description.sql`
+- 给出执行顺序（如有依赖关系）
+
+### 6. 模块依赖关系（如涉及）
+
+- 列出本模块依赖的其他 Service
+- 列出本模块的 Service 被哪些其他模块注入使用
+
+### 7. 文件清单
+
+列出本次新增或修改的所有文件：
+
+```markdown
+| 文件路径 | 操作 | 说明 |
+|---------|------|------|
+| `controller/admin/XxxController.java` | 新建 | 后台管理接口 |
+| `service/XxxService.java` | 新建 | 业务逻辑 |
+| `mapper/XxxMapper.java` | 新建 | 数据访问层 |
+| `entity/Xxx.java` | 新建 | 表实体 |
+| `dto/XxxRequest.java` | 新建 | 请求 DTO |
+```
+
+### 8. 部署检查清单
+
+```markdown
+- [ ] 执行 Flyway 迁移脚本（自动）
+- [ ] 配置 Nacos 相关配置项
+- [ ] 重启服务
+- [ ] 验证 Swagger 文档（/swagger-ui.html）
+- [ ] 测试完整流程
+```
+
+## 文档格式要求
+
+- 使用中文撰写所有说明文字
+- SQL、JSON、Java 代码块使用对应语言标记
+- 表格对齐，字段说明清晰
+- 章节编号使用「一、二、三」或「1. 2. 3.」，保持与已有文档风格一致
+
+## 核心原则
+
+- **文档的首要读者是「不熟悉本模块的开发者」**——他们需要快速理解：这个接口做了什么、业务逻辑怎么流转、数据怎么存的、异常怎么处理的
+- **「业务逻辑与实现详解」是最重要的章节**，必须写到让人不看代码也能理解 80% 的实现
+- 每个 API 都要有完整的调用链路：Controller → Service → Mapper，不能只写"调用 Service 处理"就结束
+- 关键的 if/else 分支判断、事务边界（`@Transactional`）、异步操作必须明确说明
+- 不要遗漏任何需要手动执行的 SQL 或需要手动配置的 Nacos 配置项
+- 如果本次编码没有涉及数据库或配置变更，对应章节可以标注「本次无变更」并跳过

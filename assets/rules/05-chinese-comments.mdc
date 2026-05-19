@@ -1,0 +1,98 @@
+---
+description: 所有代码必须添加中文注释
+globs: src/main/java/**/*.java
+alwaysApply: true
+---
+# 中文注释编码规范
+
+所有代码文件必须添加**中文注释**，确保代码可读性和可维护性。
+
+## 类 / 接口注释
+
+每个类和接口必须有中文 Javadoc，说明职责和用途。
+
+```java
+// ✅ 正确
+/**
+ * 用户管理控制器
+ * 提供用户注册、登录、信息查询等接口
+ */
+@RestController
+@RequestMapping("/v1/user")
+public class UserController { }
+
+// ❌ 缺少类注释
+@RestController
+@RequestMapping("/v1/user")
+public class UserController { }
+```
+
+## 方法注释
+
+每个公开方法必须有中文 Javadoc，包含功能说明、参数、返回值和异常描述。
+
+```java
+// ✅ 正确
+/**
+ * 根据用户ID查询用户详情
+ *
+ * @param userId 用户ID
+ * @return 用户详情信息
+ * @throws NotFoundException 用户不存在时抛出
+ */
+public UserVO getUserById(Long userId) { }
+
+// ❌ 缺少方法注释
+public UserVO getUserById(Long userId) { }
+```
+
+## 字段注释
+
+Entity、DTO、VO 的字段必须添加中文注释说明含义。
+
+```java
+// ✅ 正确
+public class UserEntity {
+    /** 用户昵称 */
+    private String nickname;
+
+    /** 账号状态：0-禁用 1-启用 */
+    private Integer status;
+}
+
+// ❌ 缺少字段注释
+public class UserEntity {
+    private String nickname;
+    private Integer status;
+}
+```
+
+## 关键逻辑注释
+
+复杂业务逻辑、条件分支、算法步骤必须添加中文行内注释。
+
+```java
+// ✅ 正确
+public void processOrder(Order order) {
+    // 校验库存是否充足
+    if (inventory.getStock() < order.getQuantity()) {
+        throw new BusinessException("库存不足");
+    }
+    // 计算折扣后的实际支付金额
+    BigDecimal finalPrice = calculateDiscount(order);
+    // 扣减库存并生成支付记录
+    deductStock(order);
+    createPaymentRecord(order, finalPrice);
+}
+```
+
+## 不需要注释的场景
+
+- Lombok 自动生成的 getter/setter
+- 含义显而易见的简单赋值（如 `this.name = name`）
+- 已有 Swagger 注解充分描述的 DTO 字段（`@ApiProperty` 的 `description` 已说明含义时，可省略重复的字段注释）
+
+## 配置与 SQL 文件
+
+- `application.yaml`：非显而易见的配置项添加行内中文注释
+- SQL 脚本：表和字段必须有 `COMMENT` 说明（参照 04-table-common-fields 规范）

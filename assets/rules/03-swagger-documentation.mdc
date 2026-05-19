@@ -1,0 +1,89 @@
+---
+description: springdoc-openapi 文档注解规范，Controller 和 DTO 必须添加中文 OpenAPI 注解
+globs: src/main/java/**/*.java
+alwaysApply: true
+---
+# springdoc-openapi 文档注解规范
+
+生成后端功能时，必须为 Controller 和 DTO 添加完整的 OpenAPI 3 文档注解（`io.swagger.v3.oas.annotations`），所有描述使用**中文**。
+
+## Controller 注解
+
+### 类级别
+
+- `@Tag(name = "模块名", description = "模块说明")` 标记模块分组
+- `@SecurityRequirement(name = "Bearer")` 标记需要认证的接口
+
+### 方法级别
+
+- `@Operation(summary = "中文摘要", description = "中文详细说明")` 描述接口用途
+- `@ApiResponse(responseCode = "200", description = "成功描述")` 标记响应
+- `@Parameter(description = "参数说明")` 标记路径参数或查询参数
+
+```java
+// ✅ 正确
+@Tag(name = "用户管理", description = "用户注册、登录、信息查询等接口")
+@SecurityRequirement(name = "Bearer")
+@RestController
+@RequestMapping("/api/admin/user")
+@RequiredArgsConstructor
+public class UserController {
+
+    @Operation(summary = "获取用户设置", description = "返回当前登录用户的个性化配置")
+    @ApiResponse(responseCode = "200", description = "成功获取用户设置")
+    @GetMapping("/settings")
+    public R<UserSettingsVO> getSettings(@AuthenticationPrincipal LoginUser loginUser) { }
+
+    @Operation(summary = "查询用户详情")
+    @GetMapping("/{userId}")
+    public R<UserVO> getUser(@Parameter(description = "用户ID") @PathVariable Long userId) { }
+}
+
+// ❌ 缺少 OpenAPI 注解
+@RestController
+@RequestMapping("/api/admin/user")
+public class UserController {
+    @GetMapping("/settings")
+    public R<UserSettingsVO> getSettings(@AuthenticationPrincipal LoginUser loginUser) { }
+}
+```
+
+## DTO / VO 注解
+
+- 类级别使用 `@Schema(description = "中文描述")` 说明用途
+- 必填字段使用 `@Schema(description = "中文描述", example = "示例值", requiredMode = Schema.RequiredMode.REQUIRED)`
+- 可选字段使用 `@Schema(description = "中文描述", nullable = true)`
+- 枚举类型补充 `allowableValues`
+
+```java
+// ✅ 正确
+@Data
+@Schema(description = "创建项目请求")
+public class CreateProjectRequest {
+
+    @Schema(description = "项目名称", example = "我的项目", requiredMode = Schema.RequiredMode.REQUIRED)
+    @NotBlank(message = "项目名称不能为空")
+    private String name;
+
+    @Schema(description = "项目描述", nullable = true)
+    private String description;
+
+    @Schema(description = "项目状态：0=草稿 1=已发布", example = "0", allowableValues = {"0", "1"})
+    private Integer status;
+}
+
+// ❌ 缺少 Schema 注解
+@Data
+public class CreateProjectRequest {
+    private String name;
+    private String description;
+}
+```
+
+## 要点
+
+- 所有 `description`、`summary` 使用中文
+- 尽量补充 `example` 值，便于 Swagger UI 调试
+- 必填字段配合 Bean Validation 注解（`@NotBlank`、`@NotNull`、`@Min` 等）
+- Entity 继承 `BaseEntity` 的审计字段已自带 `@Schema` 注解，无需重复添加
+- 导入路径统一使用 `io.swagger.v3.oas.annotations.*`，禁止使用旧版 `io.swagger.annotations.*`

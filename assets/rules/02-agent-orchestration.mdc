@@ -1,0 +1,97 @@
+---
+description: "Multi-agent Swarm orchestration rule: triggers when user mentions '编排模式', '开发并测试', '修复并测试', '编排修复', '全流程', '测试：', '补充测试', '写测试'. Tech-stack agnostic."
+globs: []
+alwaysApply: true
+---
+
+# Multi-Agent Swarm Orchestration
+
+## When to Activate
+
+When the user's message contains any of these trigger phrases, **immediately** read and follow the orchestrator skill at `.cursor/skills/orchestrator/SKILL.md`:
+
+- "编排模式" — general orchestration (feature, refactor, or auto-detect)
+- "开发并测试" — develop and test a feature
+- "修复并测试" — fix a bug and test the fix
+- "编排修复" — orchestrated bug fix
+- "全流程" — full pipeline (all agents)
+- "测试：" — test only, skip dev agents
+- "补充测试" — test only, skip dev agents
+- "写测试" — test only, skip dev agents
+
+## Scenario Detection
+
+If the trigger phrase alone does not clarify the scenario, infer from context:
+
+| Signal | Scenario |
+|--------|----------|
+| Words like "bug", "报错", "失败", "异常", "修复", "fix" | Bug Fix |
+| Words like "重构", "refactor", "优化结构" | Refactor |
+| Words like "测试：", "补充测试", "写测试", "test only" | **Test Only** (skip dev agents, only run test agent) |
+| Everything else (new endpoint, new page, new feature) | New Feature |
+
+## Agent Roster
+
+All agents are **tech-stack agnostic** — they auto-detect the project's languages, frameworks, and conventions before doing any work.
+
+| Agent | Role | Dispatch Timing |
+|-------|------|----------------|
+| `frontend-agent` | Client-side / UI development | Step 2: 并行开发（按需） |
+| `backend-agent` | Server-side / API development | Step 2: 并行开发（按需） |
+| `dev-agent` | General-purpose fallback | Step 2: 当前后端无法分离时 |
+| `review-agent` | Code quality review（只读） | Step 3: 与 test-agent 并行 |
+| `test-agent` | Test writing & execution | Step 3: 与 review-agent 并行 |
+| `doc-agent` | Documentation generation | Step 5: 最后执行 |
+
+## Mandatory First Step: Tech Stack Detection
+
+The orchestrator MUST auto-detect the project's tech stack before dispatching any agent. This includes:
+- Languages and frameworks (frontend + backend)
+- Test frameworks per module
+- Package manager
+- Monorepo structure (if applicable)
+- Immutable files (database schemas, API contracts, generated code)
+- Code style configuration
+
+This **Project Context** is passed to every subagent.
+
+## Behavior Constraints
+
+### Frontend Agent Boundaries
+- Auto-detects frontend framework (React, Vue, Angular, Svelte, etc.)
+- CAN modify: client-side code, UI components, styles, i18n, state management
+- MUST NOT modify: server-side code, test files, immutable files
+
+### Backend Agent Boundaries
+- Auto-detects backend framework (NestJS, Spring, Django, FastAPI, Go, etc.)
+- CAN modify: server-side code, API endpoints, services, data access
+- MUST NOT modify: client-side code, test files, database schemas (unless explicitly required), immutable files
+
+### Dev Agent Boundaries (fallback)
+- Used when frontend/backend split is unclear
+- CAN modify: any non-test code
+- MUST NOT modify: test files, immutable files
+
+### Test Agent Boundaries
+- Auto-detects test framework (Jest, Vitest, pytest, JUnit, Go test, etc.)
+- MUST NOT modify business code (anything outside test files)
+- MUST run tests after writing them and report results
+
+### Review Agent Boundaries
+- Read-only — MUST NOT modify any files
+- Reviews against the project's own standards (auto-detected)
+
+### Doc Agent Boundaries
+- CAN create/modify: documentation files only
+- MUST NOT modify any code or test files
+
+### Orchestrator Responsibilities
+- Auto-detect project tech stack before dispatching (Step 0)
+- Analyze and decompose the user's requirement
+- Determine which agents to activate based on requirement + tech stack
+- Dispatch frontend and backend agents **in parallel** when both are needed
+- Dispatch review and test agents **in parallel** after dev work completes
+- Pass complete context (including Project Context) to each subagent
+- Handle failures with auto-retry (max 2 cycles)
+- Dispatch doc agent after all dev/review/test work is done
+- Produce a final Swarm summary report for the user

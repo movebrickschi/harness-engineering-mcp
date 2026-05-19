@@ -1,0 +1,46 @@
+---
+description: 可观测性、结构化日志与监控埋点规范
+globs: **/*.java
+alwaysApply: false
+---
+# 可观测性与日志规范
+
+## 结构化日志
+
+使用JSON格式输出，必须包含以下字段：
+
+| 字段 | 说明 |
+|------|------|
+| trace_id | 链路追踪ID |
+| span_id | 跨度ID |
+| timestamp | 时间戳 |
+| severity | 日志级别 |
+| message | 日志消息 |
+
+## 日志级别规范
+
+| 级别 | 使用场景 |
+|------|---------|
+| ERROR | 需要立即处理的系统错误 |
+| WARN | 业务异常、可恢复的错误 |
+| INFO | 关键业务路径（登录、支付、状态变更） |
+| DEBUG | 开发调试信息，生产环境关闭 |
+
+**禁止在日志中打印**：密码、Token、信用卡号、身份证号。使用MDC存储用户上下文。
+
+## 监控埋点
+
+### 黄金指标（RED/USE）
+
+- **Latency**：接口响应延迟
+- **Traffic**：请求流量
+- **Errors**：错误率
+- **Saturation**：资源饱和度
+
+### 业务指标
+
+使用Micrometer + Prometheus暴露端点，关键方法添加`@Timed`、`@Counted`注解。
+
+### 链路追踪
+
+异步方法必须传递Tracing Context，确保链路完整。

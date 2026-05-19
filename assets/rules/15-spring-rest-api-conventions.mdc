@@ -1,0 +1,202 @@
+---
+description: Spring Boot REST API 编码约定，涵盖统一响应、URL 规范、依赖注入、权限、异常处理等
+globs: src/main/java/**/*.java
+alwaysApply: true
+---
+# Spring Boot REST API 编码约定
+
+## 统一响应格式
+
+所有 Controller 方法必须返回 `R<T>`，禁止直接返回裸对象或 `ResponseEntity`。
+
+```java
+// ✅ 正确
+@GetMapping("/{id}")
+public R<UserVO> getUser(@PathVariable Long id) {
+    return R.ok(userService.findById(id));
+}
+
+@DeleteMapping("/{id}")
+public R<Void> deleteUser(@PathVariable Long id) {
+    userService.delete(id);
+    return R.ok();
+}
+
+// ❌ 禁止
+@GetMapping("/{id}")
+public UserVO getUser(@PathVariable Long id) { ... }
+
+@GetMapping("/{id}")
+public ResponseEntity<UserVO> getUser(@PathVariable Long id) { ... }
+```
+
+## URL 路径规范
+
+| 前缀 | 用途 | 鉴权要求 |
+|------|------|---------|
+| `/api/admin/...` | 后台管理接口 | `@PreAuthorize("@authGuard.isSysUser(authentication)")` |
+| `/api/app/...` | 前台用户接口 | `@PreAuthorize("@authGuard.isAppUser(authentication)")` 或 `@PublicApi` |
+
+RESTful 风格：
+- 列表：`GET /api/admin/user/list` 或 `GET /api/admin/user/page`
+- 详情：`GET /api/admin/user/{id}`
+- 新增：`POST /api/admin/user`
+- 修改：`PUT /api/admin/user/{id}`
+- 删除：`DELETE /api/admin/user/{id}`
+
+## 依赖注入
+
+统一使用构造器注入 + Lombok `@RequiredArgsConstructor`，禁止 `@Autowired` 字段注入。
+
+```java
+// ✅ 正确
+@RestController
+@RequiredArgsConstructor
+public class UserController {
+    private final UserService userService;
+    private final AuditLogService auditLogService;
+}
+
+// ❌ 禁止
+@RestController
+public class UserController {
+    @Autowired
+    private UserService userService;
+}
+```
+
+## 权限与认证
+
+### 后台接口
+
+类级别添加 `@PreAuthorize` + `@SecurityRequirement`：
+
+```java
+@SecurityRequirement(name = "Bearer")
+@PreAuthorize("@authGuard.isSysUser(authentication)")
+@RestController
+@RequestMapping("/api/admin/xxx")
+public class AdminXxxController { }
+```
+
+### 公开接口
+
+无需登录的接口使用 `@PublicApi` 注解，SecurityConfig 自动放行：
+
+```java
+@PublicApi
+@GetMapping("/public/list")
+public R<List<ItemVO>> publicList() { }
+```
+
+### 获取当前用户
+
+使用 `@AuthenticationPrincipal LoginUser` 获取当前登录用户信息：
+
+```java
+@PostMapping
+public R<Void> create(@RequestBody @Valid CreateDTO dto,
+                      @AuthenticationPrincipal LoginUser loginUser) {
+    Long userId = loginUser.getUserId();
+    // ...
+}
+```
+
+## 参数校验
+
+Controller 方法的 RequestBody 必须添加 `@Valid` 或 `@Validated`，DTO 字段使用 Bean Validation 注解：
+
+```java
+// Controller
+@PostMapping
+public R<Void> create(@RequestBody @Valid CreateUserRequest request) { }
+
+// DTO
+@Data
+public class CreateUserRequest {
+    @NotBlank(message = "用户名不能为空")
+    @Size(min = 2, max = 50, message = "用户名长度需在2-50之间")
+    private String username;
+
+    @NotNull(message = "状态不能为空")
+    private Integer status;
+}
+```
+
+`GlobalExceptionHandler` 已统一处理 `MethodArgumentNotValidException` 和 `ConstraintViolationException`，返回 400 + 校验错误信息。
+
+## 异常处理
+
+使用 `BusinessException` 工厂方法抛出业务异常，由 `GlobalExceptionHandler` 统一捕获返回 `R`：
+
+```java
+// ✅ 正确：使用 BusinessException 工厂方法
+if (entity == null) {
+    throw BusinessException.notFound("记录不存在");
+}
+if (!hasPermission) {
+    throw BusinessException.forbidden("无权限操作此记录");
+}
+throw BusinessException.badRequest("参数格式不正确");
+
+// ✅ 也可使用 ResponseStatusException（部分历史代码）
+throw new ResponseStatusException(HttpStatus.NOT_FOUND, "记录不存在");
+```
+
+| 工厂方法 | 错误码 | 使用场景 |
+|---------|--------|---------|
+| `BusinessException.badRequest(msg)` | 400 | 参数错误、业务校验失败 |
+| `BusinessException.unauthorized(msg)` | 401 | 未认证 |
+| `BusinessException.forbidden(msg)` | 403 | 无权限 |
+| `BusinessException.notFound(msg)` | 404 | 资源不存在 |
+| `BusinessException.internal(msg)` | 500 | 内部错误 |
+
+## Controller 标准模板
+
+```java
+@Tag(name = "模块名称", description = "模块说明")
+@SecurityRequirement(name = "Bearer")
+@Slf4j
+@RestController
+@RequestMapping("/api/admin/xxx")
+@RequiredArgsConstructor
+@PreAuthorize("@authGuard.isSysUser(authentication)")
+public class AdminXxxController {
+
+    private final XxxService xxxService;
+
+    @Operation(summary = "分页查询列表")
+    @GetMapping("/page")
+    public R<IPage<XxxVO>> page(
+            @RequestParam(defaultValue = "1") Integer page,
+            @RequestParam(defaultValue = "10") Integer size) {
+        // ...
+    }
+
+    @Operation(summary = "查询详情")
+    @GetMapping("/{id}")
+    public R<XxxVO> getById(@Parameter(description = "记录ID") @PathVariable Long id) {
+        // ...
+    }
+
+    @Operation(summary = "新增")
+    @PostMapping
+    public R<Xxx> create(@RequestBody @Valid XxxCreateRequest request,
+                         @AuthenticationPrincipal LoginUser loginUser) {
+        // ...
+    }
+
+    @Operation(summary = "更新")
+    @PutMapping("/{id}")
+    public R<Void> update(@PathVariable Long id,
+                          @RequestBody @Valid XxxUpdateRequest request) {
+        // ...
+    }
+
+    @Operation(summary = "删除")
+    @DeleteMapping("/{id}")
+    public R<Void> delete(@Parameter(description = "记录ID") @PathVariable Long id) {
+        // ...
+    }
+}
+```

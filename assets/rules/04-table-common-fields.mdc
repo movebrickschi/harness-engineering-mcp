@@ -1,0 +1,100 @@
+---
+description: 所有数据库表必须包含的公共字段规范（tenant_id、oem_id、deleted、created_by、updated_by、created_at、updated_at）
+globs: src/main/java/**/*.java, src/main/resources/db/migration/*.sql
+alwaysApply: true
+---
+
+# 数据库表公共字段规范
+
+所有数据库表（系统表 + 业务表）必须包含以下 7 个公共字段。
+
+## 字段顺序
+
+1. `id`（主键）
+2. `tenant_id`、`oem_id`（归属字段）
+3. **业务字段**
+4. `deleted`、`created_by`、`updated_by`、`created_at`、`updated_at`（审计字段）
+5. `PRIMARY KEY`、索引
+
+## SQL DDL 模板
+
+```sql
+CREATE TABLE IF NOT EXISTS xxx (
+    id           BIGINT       NOT NULL AUTO_INCREMENT COMMENT '主键',
+    tenant_id    BIGINT       NOT NULL COMMENT '租户ID',
+    oem_id       BIGINT       DEFAULT NULL COMMENT 'OEM厂商ID',
+    -- ... 业务字段 ...
+    deleted      TINYINT      NOT NULL DEFAULT 0 COMMENT '逻辑删除 0-未删除 1-已删除',
+    created_by   BIGINT       DEFAULT NULL COMMENT '创建人userId',
+    updated_by   BIGINT       DEFAULT NULL COMMENT '更新人userId',
+    created_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    updated_at   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+    PRIMARY KEY (id),
+    INDEX idx_tenant_id (tenant_id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='表注释';
+```
+
+## Java Entity 模板
+
+```java
+@Data
+@TableName("xxx")
+public class Xxx {
+
+    @TableId(type = IdType.AUTO)
+    private Long id;
+
+    private Long tenantId;
+
+    private Long oemId;
+
+    // ... 业务字段 ...
+
+    @TableLogic
+    private Integer deleted;
+
+    @TableField(fill = FieldFill.INSERT)
+    private Long createBy;
+
+    @TableField(fill = FieldFill.INSERT_UPDATE)
+    private Long updateBy;
+
+    private LocalDateTime createdAt;
+
+    private LocalDateTime updatedAt;
+}
+```
+
+## 自动填充机制
+
+- `tenant_id`：由 `TenantLineInnerInterceptor` 拦截器自动注入，无需手动赋值
+- `created_by`：通过 `MetaObjectHandler` 在 INSERT 时自动填充当前登录用户 userId
+- `updated_by`：通过 `MetaObjectHandler` 在 INSERT 和 UPDATE 时自动填充当前登录用户 userId
+- `created_at` / `updated_at`：由 MySQL `DEFAULT CURRENT_TIMESTAMP` / `ON UPDATE CURRENT_TIMESTAMP` 自动维护，无需代码赋值
+
+## 数据库操作前置校验（MCP）
+
+涉及数据库表结构变更时（新增表、修改表、新增字段等），如果当前环境有可用的数据库 MCP 工具（如 `user-mysql`），**必须先查询数据库现状再给出方案**：
+
+### 新增表
+
+1. 使用 `list_tables` 查询当前所有表，确认目标表名不存在
+2. 如果表已存在，使用 `describe_table` 查看现有表结构，改为给出 `ALTER TABLE` 方案而非 `CREATE TABLE`
+
+### 修改表 / 新增字段
+
+1. 使用 `describe_table` 查看目标表当前完整结构
+2. 确认要新增的字段不存在、要修改的字段确实存在
+3. 基于实际表结构给出精确的 `ALTER TABLE` 语句
+
+### 查询示例
+
+- 列出所有表：MCP `user-mysql` -> `list_tables`
+- 查看表结构：MCP `user-mysql` -> `describe_table`，参数 `table: "表名"`
+- 自定义查询：MCP `user-mysql` -> `execute_query`，参数 `query: "SELECT ..."`（仅支持只读查询）
+
+### 注意事项
+
+- 此规则的前提是项目中已配置对应数据库的 MCP 工具，如果没有则跳过校验步骤
+- MCP 工具仅支持只读操作（SELECT/SHOW/DESCRIBE），不能执行 DDL/DML
+- 校验结果用于辅助决策，最终的 DDL 脚本仍然写入 Flyway 迁移文件

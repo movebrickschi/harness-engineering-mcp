@@ -1,0 +1,124 @@
+---
+description: MyBatis-Plus ORM 使用规范，涵盖查询构造、分页、逻辑删除、多租户等
+globs: src/main/java/**/*.java
+alwaysApply: true
+---
+# MyBatis-Plus 使用规范
+
+## Mapper 定义
+
+所有 Mapper 接口继承 `BaseMapper<T>`，添加 `@Mapper` 注解：
+
+```java
+@Mapper
+public interface XxxMapper extends BaseMapper<Xxx> { }
+```
+
+## 查询构造器
+
+优先使用 `LambdaQueryWrapper` / `LambdaUpdateWrapper`（类型安全），禁止使用字符串列名。
+
+```java
+// ✅ 正确：Lambda 方式，编译时检查
+LambdaQueryWrapper<SysRole> wrapper = new LambdaQueryWrapper<SysRole>()
+        .eq(SysRole::getRoleCode, roleCode)
+        .eq(SysRole::getTenantId, tenantId)
+        .orderByDesc(SysRole::getCreatedAt);
+
+// ❌ 禁止：字符串列名，重构时易出错
+QueryWrapper<SysRole> wrapper = new QueryWrapper<SysRole>()
+        .eq("role_code", roleCode);
+```
+
+条件构造支持动态条件（第一个参数为 boolean）：
+
+```java
+wrapper.eq(StringUtils.isNotBlank(name), SysRole::getRoleName, name);
+```
+
+## 自定义 SQL
+
+简单的关联查询使用 `@Select` 注解直接写在 Mapper 接口上。复杂 SQL（动态条件多、超过 5 行）才使用 XML Mapper。
+
+```java
+@Select("SELECT DISTINCT m.* FROM sys_menu m " +
+        "INNER JOIN sys_role_menu rm ON rm.menu_id = m.id " +
+        "WHERE rm.role_id = #{roleId} AND m.status = 1 " +
+        "ORDER BY m.sort_order")
+List<SysMenu> selectMenusByRoleId(@Param("roleId") Long roleId);
+```
+
+## 分页查询
+
+统一使用 MyBatis-Plus 的 `Page<T>` + `IPage<T>`，不要手写 LIMIT/OFFSET。
+
+```java
+// Controller
+@GetMapping("/list")
+public R<IPage<UserVO>> list(
+        @RequestParam(defaultValue = "1") Integer page,
+        @RequestParam(defaultValue = "10") Integer size) {
+    Page<User> pageParam = new Page<>(page, size);
+    IPage<UserVO> result = userService.findByPage(pageParam);
+    return R.ok(result);
+}
+
+// Service / Mapper
+IPage<User> selectPage(Page<User> page, @Param("ew") Wrapper<User> wrapper);
+```
+
+## Entity 继承与审计字段
+
+所有业务实体必须继承 `BaseEntity`，自动获得 `createdAt`、`updatedAt`、`createBy`、`createByType`、`updateBy`、`updateByType` 六个审计字段，由 `AuditMetaObjectHandler` 自动填充。
+
+```java
+@Data
+@EqualsAndHashCode(callSuper = true)
+@TableName("xxx")
+public class Xxx extends BaseEntity {
+    @TableId(type = IdType.AUTO)
+    private Long id;
+    private Long tenantId;
+    // ... 业务字段 ...
+}
+```
+
+## 逻辑删除
+
+需要逻辑删除的表在 Entity 字段上标记 `@TableLogic`：
+
+```java
+@TableLogic
+private Integer deleted;
+```
+
+MyBatis-Plus 会自动在查询时追加 `deleted = 0` 条件，删除操作自动转为 `UPDATE SET deleted = 1`。
+
+## 多租户
+
+`TenantLineInnerInterceptor` 自动为 SQL 追加 `tenant_id` 条件，无需手动拼接。
+- `TenantContext` 从 JWT 中提取当前租户 ID
+- 白名单表（不需要租户隔离的表）在 `MyBatisPlusConfig` 中配置
+- 新增不需要租户隔离的表时，必须同步更新白名单配置
+
+## 批量操作
+
+批量插入使用 `saveBatch` 或逐条 `insert`。数据量大于 100 条时优先使用 `saveBatch`（默认每批 1000 条）：
+
+```java
+// ✅ 批量插入
+List<SysRoleMenu> records = buildRecords();
+// 如果 Service 继承了 IService，可用 saveBatch
+// 否则循环调用 mapper.insert()
+
+// ❌ 禁止在循环中执行单条 SQL 且不加日志
+for (Long id : ids) {
+    mapper.deleteById(id);
+}
+```
+
+## 禁止事项
+
+- 禁止在 `LambdaQueryWrapper` 中使用 `last("LIMIT 1")` 代替 `selectOne` 后的空值判断
+- 禁止在 Service 层直接拼接 SQL 字符串
+- 禁止绕过 MyBatis-Plus 直接使用 JDBC Template（除非有明确性能瓶颈且经评审）

@@ -1,0 +1,56 @@
+---
+description: 可测试性设计与单元测试标准
+globs: **/*.java
+alwaysApply: false
+---
+# 可测试性设计
+
+## 覆盖率门槛
+
+| 指标 | 最低要求 |
+|------|---------|
+| 行覆盖率 | > 80% |
+| 分支覆盖率 | > 70% |
+| 核心业务逻辑 | 100% |
+
+## 测试金字塔
+
+单元测试 : 集成测试 : E2E测试 = **70 : 20 : 10**，禁止Ice-Cream Cone反模式。
+
+## Mock策略
+
+```java
+// ✅ 外部依赖使用@MockBean，轻量启动
+@ExtendWith(MockitoExtension.class)
+class OrderServiceTest {
+    @Mock private PaymentGateway paymentGateway;
+    @InjectMocks private OrderService orderService;
+}
+
+// ❌ 禁止为单元测试加载全Spring上下文
+@SpringBootTest
+class OrderServiceTest { }
+```
+
+## BDD风格
+
+测试方法名描述行为，使用Given-When-Then结构：
+
+```java
+@Test
+void shouldDecreaseBalanceWhenWithdrawSufficientFunds() {
+    // Given - 准备测试数据
+    Account account = Account.builder().balance(1000).build();
+    // When - 执行被测行为
+    account.withdraw(200);
+    // Then - 验证结果
+    assertThat(account.getBalance()).isEqualTo(800);
+}
+```
+
+## 测试数据管理
+
+- 使用Test Data Builder模式创建复杂对象
+- 禁止测试间共享可变状态
+- 集成测试使用@Testcontainers，每测试方法独立Schema
+- 禁用@Transactional回滚策略（会掩盖真实数据库问题，如约束冲突、触发器行为等）

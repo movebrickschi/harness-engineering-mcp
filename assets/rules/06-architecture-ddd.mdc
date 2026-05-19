@@ -1,0 +1,39 @@
+---
+description: 架构分层与DDD设计原则，约束分层依赖和领域建模
+globs: **/*.java
+alwaysApply: true
+---
+# 架构分层与DDD设计原则
+
+## 分层架构
+
+严格遵循四层架构，禁止跨层调用：
+
+```
+Controller(接口层) → Application(编排层) → Domain(核心业务) → Infrastructure(技术实现)
+```
+
+| 层 | 职责 | 允许依赖 |
+|---|------|---------|
+| Controller | 参数校验、协议转换、路由 | Application |
+| Application | 用例编排、事务管理、DTO转换 | Domain |
+| Domain | 核心业务逻辑、领域模型、领域服务 | 无外部依赖 |
+| Infrastructure | 数据库访问、外部API、消息队列 | Domain（通过Port接口） |
+
+**关键约束**：Domain层禁止依赖Infrastructure层，通过端口(Port)和适配器(Adapter)解耦。
+
+## DDD建模要素
+
+- **Entity**：有唯一标识的领域对象，生命周期内可变
+- **Value Object**：无标识、不可变，通过属性值判等
+- **Aggregate Root**：聚合的入口，外部只能通过聚合根访问内部对象
+- **Domain Service**：跨聚合的业务逻辑，不属于任何单一实体
+
+## 设计模式优先策略
+
+- 复杂对象创建 → Builder模式
+- 多态创建 → Factory Method
+- 多重if-else → Strategy策略模式
+- 状态流转 → State状态机模式
+- 异步流程 → CQRS + Event Sourcing（视场景复杂度而定）
+- 优先组合，避免继承复用代码

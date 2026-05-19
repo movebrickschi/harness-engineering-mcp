@@ -1,0 +1,51 @@
+---
+description: 企业级安全规范（OWASP Top 10、敏感数据处理）
+globs: **/*.java
+alwaysApply: false
+---
+# 企业级安全规范
+
+## 输入安全（OWASP Top 10）
+
+### 注入防护
+
+```java
+// ✅ 参数化查询
+@Select("SELECT * FROM user WHERE email = #{email}")
+User findByEmail(@Param("email") String email);
+
+// ❌ 禁止拼接SQL
+@Select("SELECT * FROM user WHERE email = '" + email + "'")
+```
+
+- SQL必须使用参数化查询（PreparedStatement / MyBatis `#{}`）
+- 禁止使用`Runtime.exec()`拼接用户输入
+- 富文本使用OWASP Java HTML Sanitizer过滤
+- JSON响应设置`Content-Type: application/json`
+
+### 序列化安全
+
+- 反序列化前验证类名白名单
+- 禁止存在RCE Gadgets类
+
+## 敏感数据处理
+
+| 类别 | 规则 |
+|------|------|
+| 密钥管理 | 禁止硬编码，使用KMS或Vault |
+| 日志脱敏 | PII必须脱敏，使用@Mask注解 |
+| 传输加密 | 内部服务mTLS，数据库强制SSL |
+| 协议版本 | 禁用TLS 1.0/1.1 |
+
+```java
+// ✅ 日志脱敏
+log.info("用户登录: userId={}, phone={}", userId, maskPhone(phone));
+
+// ❌ 禁止明文打印
+log.info("用户登录: phone={}, password={}", phone, password);
+```
+
+## 权限校验
+
+- 所有写操作必须校验`@PreAuthorize`或自定义权限注解
+- 数据隔离：按tenant_id隔离，防止越权访问

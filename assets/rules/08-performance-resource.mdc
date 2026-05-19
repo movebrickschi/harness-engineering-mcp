@@ -1,0 +1,44 @@
+---
+description: JVM性能优化与数据访问层规范
+globs: **/*.java
+alwaysApply: false
+---
+# 性能与资源管理
+
+## JVM优化
+
+- **对象池化**：高创建成本对象（JSON Parser、Regex Pattern）使用`static final`常量或ThreadLocal缓存
+- **集合选型**：频繁查询→HashMap，有序遍历→LinkedHashMap，并发读多→CopyOnWriteArrayList
+- **Stream**：大数据量避免长链式操作，CPU密集型任务可用parallel()
+- **内存泄漏**：匿名内部类检查对外部类的隐式引用，监听器必须提供移除机制
+
+```java
+// ✅ 正确：Pattern编译为静态常量
+private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w.-]+@[\\w.-]+$");
+
+// ❌ 错误：每次调用都编译
+public boolean validate(String email) {
+    return Pattern.compile("^[\\w.-]+@[\\w.-]+$").matcher(email).matches();
+}
+```
+
+## 数据访问层
+
+| 规则 | 说明 |
+|------|------|
+| 禁止SELECT * | 只查询需要的字段 |
+| JOIN不超过3表 | 超过则拆分为多次查询 |
+| 千万级大表 | 必须考虑分库分表策略 |
+| N+1问题 | 自定义`@Select` JOIN查询或`resultMap`嵌套查询；生产环境开启SQL统计日志验证 |
+
+## 缓存策略
+
+| 场景 | 策略 |
+|------|------|
+| 读多写少 | Read-Through Cache |
+| 写多读少 | Write-Behind |
+| 缓存穿透 | Bloom Filter |
+
+## 连接池
+
+HikariCP的`maximum-pool-size` = (core_count × 2) + effective_spindle_count
