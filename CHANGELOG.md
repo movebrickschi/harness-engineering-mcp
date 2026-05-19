@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+### Added (docs)
+- `docs/IDE_DAILY_USAGE.md` — post-install day-to-day guide for Cursor / Claude Code: 5 real conversation scenarios (onboarding / one-liner / bugfix / mode upgrade / CI), AI opening prompt template, 6-tool natural-language mapping, resource URI cheatsheet, 3-step smoke verification, top efficiency rules, and a troubleshooting matrix.
+
 ### Added (post-audit optimizations · batch 1-3)
 - Rules now carry an `applies_to: [stack]` frontmatter so `harness://rules/index` returns RuleMeta `{filename, appliesTo}` objects. Java/Spring-only rules (03/04/06/08/13/14/15) are tagged `[java-spring]`; cross-stack rules (02/05/07/09/10/11/12/16) are tagged `[all]`. A new `listRulesForStack(stack)` helper filters rules for non-Java projects.
 - `assets/skills/INDEX.md` — full skill decision tree with mermaid, P0/P1/P2 buckets, daily/weekly/monthly frequency, dependency graph; exposed via the new `harness://skills/_decision-tree` URI.

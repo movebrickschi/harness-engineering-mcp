@@ -74,7 +74,8 @@ harness check --run-tests
 
 完整端到端只需要 **4 条命令**。
 
-> 想看更详细的真实场景走通（新项目接入 / AI 路由 / DB 升级触发 / 团队升档 / CI 集成）请直接读 [`docs/USAGE.md`](docs/USAGE.md)。
+> - 完整真实场景（新项目接入 / AI 路由 / DB 升级触发 / 团队升档 / CI 集成）→ [`docs/USAGE.md`](docs/USAGE.md)
+> - **MCP 装好后日常怎么用**（自然语言对话模板 / 开场白 / 6 工具不需记忆映射 / 资源 URI 速查）→ [`docs/IDE_DAILY_USAGE.md`](docs/IDE_DAILY_USAGE.md)
 
 ---
 
@@ -658,6 +659,7 @@ git tag v0.1.0 && git push origin v0.1.0
 | 文档 | 用途 |
 |---|---|
 | [`docs/USAGE.md`](docs/USAGE.md) | **新手必读** · 5 个端到端场景走通（新项目接入 / AI 路由 / 强制升级 / 团队升档 / CI 集成）|
+| [`docs/IDE_DAILY_USAGE.md`](docs/IDE_DAILY_USAGE.md) | **MCP 装好后每天怎么用** · 自然语言对话模板 · 开场白 · 6 工具不需记忆映射 · 资源 URI 速查 · 故障排查 |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | v0.1 设计草案（API 契约 / 时序图 / 4 周 milestone）|
 | [`docs/M2_PS1_COMPATIBILITY.md`](docs/M2_PS1_COMPATIBILITY.md) | 与原 `engineering-check.ps1` 的等价对照表 + CI 迁移指南 |
 | [`docs/M3_CURSOR_INTEGRATION.md`](docs/M3_CURSOR_INTEGRATION.md) | Cursor MCP 接入步骤 + URI 测试清单 |
