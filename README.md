@@ -49,3 +49,10 @@ See `docs/PROPOSAL.md`.
 ## Cursor Integration
 
 See `docs/M3_CURSOR_INTEGRATION.md` for the verified Cursor MCP wiring, the per-URI manual test plan, and the known differences with Claude Code / Codex CLI.
+
+## PS1 Compatibility
+
+`harness check` is a cross-platform port of `engineering-check.ps1`. The
+PASS/WARN/FAIL token set and `check_id` namespace are stable; see
+`docs/M2_PS1_COMPATIBILITY.md` for the equivalence table and the
+`--run-tests` flag that turns the static checker into a real test runner.

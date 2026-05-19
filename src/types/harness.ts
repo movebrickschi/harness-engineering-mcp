@@ -182,6 +182,14 @@ export interface CheckToolInput {
   >;
   strict?: boolean;
   output_format?: "summary" | "detailed" | "json";
+  /**
+   * When true, the `tests` category also spawns the real stack test runner
+   * (mvn / npm test / pytest) and surfaces its exit code as PASS/FAIL.
+   * Default false to keep routine `harness check` runs fast.
+   */
+  run_tests?: boolean;
+  /** Per-runner timeout in ms for spawned test commands. Defaults to 600000. */
+  test_timeout_ms?: number;
 }
 
 export interface CheckResult {

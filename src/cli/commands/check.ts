@@ -14,7 +14,17 @@ export function registerCheckCommand(program: Command): void {
     )
     .option("--strict", "treat WARN as FAIL", false)
     .option("--json", "print JSON output", false)
-    .action(async (options: { cwd: string; categories: string; strict: boolean; json: boolean }) => {
+    .option("--run-tests", "also spawn real test runner (mvn/npm test/pytest)", false)
+    .option("--test-timeout-ms <ms>", "per-runner timeout for spawned tests", "600000")
+    .action(
+      async (options: {
+        cwd: string;
+        categories: string;
+        strict: boolean;
+        json: boolean;
+        runTests: boolean;
+        testTimeoutMs: string;
+      }) => {
       const result = await runChecks({
         cwd: options.cwd,
         categories: options.categories.split(",").map((s) => s.trim()) as Array<
@@ -22,6 +32,8 @@ export function registerCheckCommand(program: Command): void {
         >,
         strict: options.strict,
         output_format: options.json ? "json" : "summary",
+        run_tests: options.runTests,
+        test_timeout_ms: Number(options.testTimeoutMs) || 600000,
       });
 
       if (options.json) {

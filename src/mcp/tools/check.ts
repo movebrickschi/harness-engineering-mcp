@@ -15,6 +15,17 @@ const inputSchema = {
     },
     strict: { type: "boolean", default: false },
     output_format: { type: "string", enum: ["summary", "detailed", "json"], default: "summary" },
+    run_tests: {
+      type: "boolean",
+      default: false,
+      description:
+        "Also spawn the real stack test command (mvn / npm test / pytest) and report exit code as PASS/FAIL via tests.exec",
+    },
+    test_timeout_ms: {
+      type: "number",
+      default: 600000,
+      description: "Per-runner timeout for spawned test commands (ms)",
+    },
   },
   required: ["cwd"],
 } as const;

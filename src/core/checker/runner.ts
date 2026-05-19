@@ -1,4 +1,6 @@
 import { existsSync, readFileSync, readdirSync, statSync } from "node:fs";
+import { spawn } from "node:child_process";
+import { setTimeout as nodeSetTimeout, clearTimeout as nodeClearTimeout } from "node:timers";
 import { join } from "node:path";
 import type {
   CheckResult,
@@ -13,7 +15,9 @@ type Category = NonNullable<CheckToolInput["categories"]>[number];
 interface CheckRunner {
   category: Exclude<Category, "all">;
   id: string;
-  run: (cwd: string) => CheckResult;
+  /** When defined, runner is only executed if predicate returns true. */
+  when?: (input: CheckToolInput) => boolean;
+  run: (cwd: string, input: CheckToolInput) => CheckResult | Promise<CheckResult>;
 }
 
 const CHECKS: CheckRunner[] = [
@@ -129,6 +133,51 @@ const CHECKS: CheckRunner[] = [
     },
   },
   {
+    category: "tests",
+    id: "tests.exec",
+    when: (input) => input.run_tests === true,
+    run: async (cwd, input) => {
+      const cfg = safeLoadConfig(cwd);
+      const stack = cfg?.project.stack ?? "other";
+      const cmd = resolveTestCommand(cwd, stack);
+      if (!cmd) {
+        return warn(
+          "tests",
+          "tests.exec",
+          `无法为 stack=${stack} 推断可执行的测试命令`,
+        );
+      }
+      const exec = await runCommand(cmd.command, cmd.args, cwd, input.test_timeout_ms ?? 600_000);
+      if (exec.timedOut) {
+        return fail(
+          "tests",
+          "tests.exec",
+          `${cmd.label} 超时 (${input.test_timeout_ms ?? 600_000}ms)`,
+        );
+      }
+      if (exec.spawnError) {
+        return warn(
+          "tests",
+          "tests.exec",
+          `${cmd.label} 无法启动: ${exec.spawnError}（可能未安装或不在 PATH）`,
+        );
+      }
+      const tail = (exec.stdout + exec.stderr).slice(-512).replace(/\s+$/g, "");
+      if (exec.exitCode === 0) {
+        return ok(
+          "tests",
+          "tests.exec",
+          `${cmd.label} 成功 (exit=0) · 末尾: ${tail.slice(-160)}`,
+        );
+      }
+      return fail(
+        "tests",
+        "tests.exec",
+        `${cmd.label} 失败 (exit=${exec.exitCode}) · 末尾: ${tail.slice(-160)}`,
+      );
+    },
+  },
+  {
     category: "baseline",
     id: "baseline.exists",
     run: (cwd) =>
@@ -182,8 +231,10 @@ export async function runChecks(input: CheckToolInput): Promise<CheckToolOutput>
   const results: CheckResult[] = [];
   for (const runner of CHECKS) {
     if (!categories.includes(runner.category)) continue;
+    if (runner.when && !runner.when(input)) continue;
     try {
-      results.push(runner.run(input.cwd));
+      const out = await runner.run(input.cwd, input);
+      results.push(out);
     } catch (err) {
       results.push(
         fail(
@@ -259,5 +310,102 @@ function walk(root: string, maxDepth: number, depth = 0, acc: string[] = []): st
     /* ignore */
   }
   return acc;
+}
+
+interface ResolvedCommand {
+  command: string;
+  args: string[];
+  label: string;
+}
+
+function resolveTestCommand(cwd: string, stack: string): ResolvedCommand | null {
+  if (stack === "node-typescript" || existsSync(join(cwd, "package.json"))) {
+    const pkg = safeReadJson<{ scripts?: Record<string, string> }>(join(cwd, "package.json"));
+    if (pkg?.scripts?.test) {
+      return { command: "npm", args: ["test", "--silent"], label: "npm test" };
+    }
+  }
+  if (stack === "java-spring" || existsSync(join(cwd, "pom.xml"))) {
+    if (existsSync(join(cwd, "pom.xml"))) {
+      return { command: "mvn", args: ["test", "-B"], label: "mvn test" };
+    }
+    if (existsSync(join(cwd, "build.gradle")) || existsSync(join(cwd, "build.gradle.kts"))) {
+      return { command: "gradle", args: ["test"], label: "gradle test" };
+    }
+  }
+  if (stack === "python" || existsSync(join(cwd, "pyproject.toml")) || existsSync(join(cwd, "requirements.txt"))) {
+    return { command: "pytest", args: ["-q"], label: "pytest -q" };
+  }
+  return null;
+}
+
+interface CommandResult {
+  exitCode: number;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+  spawnError: string | null;
+}
+
+function runCommand(
+  command: string,
+  args: string[],
+  cwd: string,
+  timeoutMs: number,
+): Promise<CommandResult> {
+  return new Promise((resolve) => {
+    let stdout = "";
+    let stderr = "";
+    let timedOut = false;
+    let settled = false;
+
+    const child = spawn(command, args, {
+      cwd,
+      shell: process.platform === "win32",
+      env: process.env,
+    });
+
+    const timer = nodeSetTimeout(() => {
+      timedOut = true;
+      try {
+        child.kill("SIGTERM");
+      } catch {
+        /* ignore */
+      }
+    }, timeoutMs);
+
+    child.stdout?.on("data", (chunk: Buffer) => {
+      stdout += chunk.toString();
+      if (stdout.length > 64_000) stdout = stdout.slice(-32_000);
+    });
+    child.stderr?.on("data", (chunk: Buffer) => {
+      stderr += chunk.toString();
+      if (stderr.length > 64_000) stderr = stderr.slice(-32_000);
+    });
+    child.on("error", (err) => {
+      if (settled) return;
+      settled = true;
+      nodeClearTimeout(timer);
+      resolve({
+        exitCode: -1,
+        stdout,
+        stderr,
+        timedOut: false,
+        spawnError: err instanceof Error ? err.message : String(err),
+      });
+    });
+    child.on("close", (code) => {
+      if (settled) return;
+      settled = true;
+      nodeClearTimeout(timer);
+      resolve({
+        exitCode: typeof code === "number" ? code : -1,
+        stdout,
+        stderr,
+        timedOut,
+        spawnError: null,
+      });
+    });
+  });
 }
 
