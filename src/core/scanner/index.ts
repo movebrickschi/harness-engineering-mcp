@@ -76,20 +76,11 @@ export async function scanProject(input: ScannerInput): Promise<InitDetected> {
     }
   }
 
-  let projectName: string | null = null;
-  if (existsSync(join(cwd, "package.json"))) {
-    try {
-      const pkg = JSON.parse(readFileSync(join(cwd, "package.json"), "utf-8")) as {
-        name?: string;
-      };
-      if (typeof pkg.name === "string") projectName = pkg.name;
-    } catch {
-      /* ignore */
-    }
-  }
-  if (!projectName) {
-    projectName = cwd.split(/[\\/]/).filter(Boolean).pop() ?? null;
-  }
+  const projectName =
+    readPackageName(cwd) ??
+    readMavenArtifactId(cwd) ??
+    readPyProjectName(cwd) ??
+    (cwd.split(/[\\/]/).filter(Boolean).pop() || null);
 
   const projectType = inferProjectType(cwd, stack);
   if (projectType) {
@@ -112,6 +103,34 @@ export async function scanProject(input: ScannerInput): Promise<InitDetected> {
     evidence,
     confidence,
   };
+}
+
+function readPackageName(cwd: string): string | null {
+  if (!existsSync(join(cwd, "package.json"))) return null;
+  try {
+    const pkg = JSON.parse(readFileSync(join(cwd, "package.json"), "utf-8")) as {
+      name?: unknown;
+    };
+    return typeof pkg.name === "string" && pkg.name.trim() ? pkg.name : null;
+  } catch {
+    return null;
+  }
+}
+
+function readMavenArtifactId(cwd: string): string | null {
+  const pomPath = join(cwd, "pom.xml");
+  if (!existsSync(pomPath)) return null;
+  const content = readFileSync(pomPath, "utf-8");
+  const match = content.match(/<artifactId>\s*([^<\s]+)\s*<\/artifactId>/);
+  return match?.[1] ?? null;
+}
+
+function readPyProjectName(cwd: string): string | null {
+  const pyprojectPath = join(cwd, "pyproject.toml");
+  if (!existsSync(pyprojectPath)) return null;
+  const content = readFileSync(pyprojectPath, "utf-8");
+  const match = content.match(/^\s*name\s*=\s*["']([^"']+)["']/m);
+  return match?.[1] ?? null;
 }
 
 function inferProjectType(

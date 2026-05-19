@@ -9,6 +9,7 @@ describe("scanProject", () => {
     const result = await scanProject({ cwd: resolve(fixtureRoot, "java-spring") });
     expect(result.stack).toBe("java-spring");
     expect(result.project_type).toBe("backend-service");
+    expect(result.project_name).toBe("java-spring-fixture");
   });
 
   it("detects Node TypeScript projects", async () => {
@@ -20,5 +21,6 @@ describe("scanProject", () => {
   it("detects Python projects", async () => {
     const result = await scanProject({ cwd: resolve(fixtureRoot, "python") });
     expect(result.stack).toBe("python");
+    expect(result.project_name).toBe("python-fixture");
   });
 });
