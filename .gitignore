@@ -15,3 +15,5 @@ Thumbs.db
 .cache/
 tmp/
 .tmp/
+.release-commit-msg.tmp
+*.commit-msg.tmp
