@@ -64,7 +64,8 @@ describe("runChecks", () => {
   it("fails invalid verification baselines", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "harness-check-baseline-"));
     try {
-      writeFileSync(join(cwd, "verification_baseline.json"), "{ invalid");
+      mkdirSync(join(cwd, ".harness"), { recursive: true });
+      writeFileSync(join(cwd, ".harness/baseline.json"), "{ invalid");
 
       const result = await runChecks({ cwd, categories: ["baseline"] });
 

@@ -186,7 +186,7 @@ project_types: [backend-service, library, cli, frontend-spa]
 
 ### 7.4 不写 mode 字段
 
-- **典型表现**：`harness.config.json` 缺 mode
+- **典型表现**：`.harness/config.json` 缺 mode
 - **危害**：工具不知该用哪套规则
 - **替代**：默认按 mid-team 处理；CI WARN
 - **触发机制**：schema 校验 + `engineering-check`

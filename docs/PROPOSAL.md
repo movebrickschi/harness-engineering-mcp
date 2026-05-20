@@ -12,7 +12,7 @@
 
 ### 1.1 目标（What）
 
-把 `heritage-inherit` 项目里已经成熟的 Engineering Harness（SSOT 文档 + Skills 体系 + .cursor/rules + engineering-check.ps1 + features/任务记忆 + Bootstrap 流程 + verification_baseline.json）打包成一个 **MCP server**，让任何 IDE / AI 工具（Claude Code / Cursor / Codex / Cline / Windsurf 等）能够：
+把 `heritage-inherit` 项目里已经成熟的 Engineering Harness（SSOT 文档 + Skills 体系 + .cursor/rules + engineering-check.ps1 + features/任务记忆 + Bootstrap 流程 + .harness/baseline.json）打包成一个 **MCP server**，让任何 IDE / AI 工具（Claude Code / Cursor / Codex / Cline / Windsurf 等）能够：
 
 1. 通过一行 MCP 配置即接入完整的工程治理能力；
 2. 通过 `harness_init` 工具一键扫描项目并生成项目个性化部分；
@@ -50,7 +50,7 @@ M1: 接到一个新项目，开始 init
     → MCP 扫描 pom.xml / package.json / requirements.txt → 预填 stack / type
     → MCP 通过返回值 ask_user_questions 字段让 AI 追问 mode / project_name 等
     → AI 收齐答案后再调 harness_init({...完整参数})
-    → MCP 渲染并写入：harness.config.json / docs/engineering-harness.md / scripts/engineering-check.* / docs/adr/0001-baseline.md / verification_baseline.json
+    → MCP 渲染并写入：.harness/config.json / .harness/engineering-harness.md / scripts/engineering-check.* / .harness/adr/0001-baseline.md / .harness/baseline.json
     → 用户 5 分钟内拿到完整的 Harness 接入
 
 M2: 日常使用
@@ -109,7 +109,7 @@ M3: spec 升级
 // ───────────────────────────────────────────────────────────────
 {
   name: "harness_check",
-  description: "Run Engineering Harness checks based on harness.config.json. Cross-platform replacement for engineering-check.ps1/sh. Returns structured PASS/WARN/FAIL.",
+  description: "Run Engineering Harness checks based on .harness/config.json. Cross-platform replacement for engineering-check.ps1/sh. Returns structured PASS/WARN/FAIL.",
   inputSchema: {
     type: "object",
     properties: {
@@ -306,9 +306,9 @@ harness-engineering-mcp/
 │   │   │   └── index.ts
 │   │   ├── renderer/
 │   │   │   ├── handlebars.ts         # 模板引擎
-│   │   │   ├── render-config.ts      # harness.config.json
-│   │   │   ├── render-ssot.ts        # docs/engineering-harness.md
-│   │   │   └── render-features.ts    # docs/features/_template
+│   │   │   ├── render-config.ts      # .harness/config.json
+│   │   │   ├── render-ssot.ts        # .harness/engineering-harness.md
+│   │   │   └── render-features.ts    # .harness/features/_template
 │   │   ├── router/
 │   │   │   ├── intent-classifier.ts  # 一句话 → intent (bugfix/refactor/...)
 │   │   │   ├── weight-estimator.ts   # 估算工时 / 范围
@@ -321,7 +321,7 @@ harness-engineering-mcp/
 │   │   │   ├── baseline-check.ts
 │   │   │   └── runner.ts             # 编排 + 输出
 │   │   ├── config/
-│   │   │   ├── loader.ts             # 读 harness.config.json + 校验 schema
+│   │   │   ├── loader.ts             # 读 .harness/config.json + 校验 schema
 │   │   │   └── defaults.ts
 │   │   └── ide-adapter/
 │   │       ├── cursor.ts             # 检测 .cursor/ 并生成对应文件
@@ -329,7 +329,7 @@ harness-engineering-mcp/
 │   │       ├── codex.ts
 │   │       └── index.ts
 │   └── types/
-│       ├── harness.ts                # 共享类型（含 harness.config.json TS 类型）
+│       ├── harness.ts                # 共享类型（含 .harness/config.json TS 类型）
 │       └── mcp.ts
 ├── assets/                          # 不参与编译，运行时按需读
 │   ├── spec/                        # 复制自 heritage-inherit/docs/engineering-harness-spec/
@@ -387,7 +387,7 @@ harness-engineering-mcp/
 | `commander` | CLI 命令解析 |
 | `prompts` 或 `inquirer` | 交互式 init |
 | `handlebars` 或 `mustache` | 模板渲染 |
-| `ajv` | harness.config.json schema 校验 |
+| `ajv` | .harness/config.json schema 校验 |
 | `globby` | 文件扫描 |
 | `simple-git` | git log / contributors 分析 |
 | `picocolors` | 终端着色 |
@@ -418,12 +418,12 @@ sequenceDiagram
   AI->>U: 检测到 Java Spring Boot 后端服务，模式建议 solo（单作者）。<br/>项目名? 是否确认 solo 模式?
   U->>AI: my-spring-app；solo
   AI->>MCP: harness_init({ cwd, mode:"solo", stack:"java-spring", project_type:"backend-service", project_name:"my-spring-app" })
-  MCP->>FS: 写入 harness.config.json
-  MCP->>FS: 写入 docs/engineering-harness.md
+  MCP->>FS: 写入 .harness/config.json
+  MCP->>FS: 写入 .harness/engineering-harness.md
   MCP->>FS: 写入 scripts/engineering-check.{ps1,sh}
-  MCP->>FS: 写入 docs/adr/0001-engineering-harness-baseline.md
-  MCP->>FS: 写入 verification_baseline.json
-  MCP->>FS: 写入 docs/features/INDEX.md + _template/
+  MCP->>FS: 写入 .harness/adr/0001-engineering-harness-baseline.md
+  MCP->>FS: 写入 .harness/baseline.json
+  MCP->>FS: 写入 .harness/features/INDEX.md + _template/
   MCP-->>AI: status=completed<br/>generated_files=[6 files]<br/>next_steps=["运行 harness_check 跑首次门禁"]
   AI->>U: 已生成 6 个文件 + 1 个 ADR + 1 个 features 目录骨架。<br/>建议下一步：harness_check 跑首次门禁。
 ```
@@ -468,6 +468,7 @@ flowchart TD
 | 第 2 周 | M2 init + check | `harness_init` 完整实现 + scanner / renderer / template；`harness_check` 跨平台版本 + CLI 包装 + 单测覆盖率 ≥ 70% | 在 3 个 fixture 项目（Java Spring / Node TS / Python）跑通 init；check 输出 PASS/WARN/FAIL 与 ps1 一致 |
 | 第 3 周 | M3 router + resources | `harness_route_task`（含 intent 分类 + 升级触发）+ `harness_load_skill`；4 类 MCP 资源（spec/skills/rules/templates）暴露；Cursor 联调 | 在真实项目中跑 8 个典型任务路由全部命中正确 skill；Cursor 通过资源 URI 读取 skill 内容 |
 | 第 4 周 | M4 gate + 多 IDE | `harness_gate_review` + `harness_upgrade_mode`；Claude Code / Codex CLI 联调；README + 安装文档；v0.1.0 发布到 npm | 3 个 IDE 都能调用全部 6 个工具；从零到完整接入新项目 ≤ 5 分钟 |
+| 第 5 周（v0.2） | 目录收拢 + uninstall | `.harness/` 统一目录 + 第 7 个工具 `harness_uninstall` + `harness_init --force`；v0.2.0 发布 | 全部 7 工具可用；老项目 git mv 升级路径清晰；69 测试用例全绿 |
 
 ---
 

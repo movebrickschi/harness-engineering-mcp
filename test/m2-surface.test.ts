@@ -32,7 +32,8 @@ describe("M2 support surface", () => {
       expect(org.dora?.track).toBe(true);
       expect(org.modules.security?.audit_log_required).toBe(true);
 
-      writeFileSync(join(cwd, "harness.config.json"), JSON.stringify(org));
+      mkdirSync(join(cwd, ".harness"), { recursive: true });
+      writeFileSync(join(cwd, ".harness/config.json"), JSON.stringify(org));
       expect(loadHarnessConfig(cwd)?.project.name).toBe("org-project");
     } finally {
       rmSync(cwd, { recursive: true, force: true });

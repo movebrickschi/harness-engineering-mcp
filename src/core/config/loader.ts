@@ -1,15 +1,16 @@
 import { existsSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import type { HarnessConfig } from "../../types/harness.js";
+import { HARNESS_PATHS } from "../paths.js";
 
 export function loadHarnessConfig(cwd: string): HarnessConfig | null {
-  const cfgPath = join(cwd, "harness.config.json");
+  const cfgPath = join(cwd, HARNESS_PATHS.config);
   if (!existsSync(cfgPath)) return null;
   try {
     return JSON.parse(readFileSync(cfgPath, "utf-8")) as HarnessConfig;
   } catch (err) {
     throw new Error(
-      `Failed to parse harness.config.json: ${err instanceof Error ? err.message : String(err)}`,
+      `Failed to parse ${HARNESS_PATHS.config}: ${err instanceof Error ? err.message : String(err)}`,
     );
   }
 }

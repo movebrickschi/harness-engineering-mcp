@@ -136,6 +136,11 @@ export interface InitToolInput {
   maturity_target?: MaturityLevel;
   compliance?: ComplianceTag[];
   dry_run?: boolean;
+  /**
+   * 当为 true 时强制按模板覆盖已存在的 harness 文件。默认 false：已存在且内容与模板不同的文件
+   * 一律 skipped(reason="kept_existing")，保护用户在 INDEX.md / ADR / config 里写的自定义内容。
+   */
+  force?: boolean;
 }
 
 export interface DetectionEvidence {
@@ -248,6 +253,8 @@ export interface RouteTaskToolOutput {
 
 export interface LoadSkillToolInput {
   name: string;
+  /** 可选的段落过滤：只返回匹配的 ## 段落（大小写不敏感、部分匹配） */
+  sections?: string[];
 }
 
 export interface LoadSkillToolOutput {
@@ -280,5 +287,22 @@ export interface UpgradeModeToolOutput {
   from: HarnessMode;
   to: HarnessMode;
   generated_files: GeneratedFile[];
+  next_steps: string[];
+}
+
+export interface UninstallToolInput {
+  cwd: string;
+  /** 仅打印将要删除的文件，不实际删除。默认 false */
+  dry_run?: boolean;
+  /** 不删除根目录的 .harness/ 自身，只清空内部内容。默认 false（连目录一起删） */
+  keep_root_dir?: boolean;
+}
+
+export interface UninstallToolOutput {
+  status: "completed" | "dry_run" | "not_found";
+  /** 已删除/将删除的相对路径列表（含目录） */
+  removed: string[];
+  /** 项目根下保留未动的 harness 相关文件（如 .github/CODEOWNERS / CHANGELOG.md 等外部约定项） */
+  kept: string[];
   next_steps: string[];
 }

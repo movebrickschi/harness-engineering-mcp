@@ -105,8 +105,8 @@ project_types: [backend-service, library, cli, frontend-spa]
 
 monorepo 含多个项目时：
 
-- 每个子项目可有独立 `harness.config.json`
-- 根级 `harness.config.json` 提供默认值
+- 每个子项目可有独立 `.harness/config.json`
+- 根级 `.harness/config.json` 提供默认值
 - 子项目优先级 > 根级
 
 ## 5. 选型不清时

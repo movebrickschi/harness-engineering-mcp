@@ -23,7 +23,7 @@ describe("harness_gate_review", () => {
         ctx(cwd),
       );
       expect(result.status).toBe("generated");
-      expect(result.file_path).toBe("docs/features/search-v2/03_GATE_REVIEW.md");
+      expect(result.file_path).toBe(".harness/features/search-v2/03_GATE_REVIEW.md");
       expect(result.blockers).toEqual([]);
 
       const body = readFileSync(join(cwd, result.file_path), "utf-8");
@@ -41,9 +41,9 @@ describe("harness_gate_review", () => {
     const cwd = mkdtempSync(join(tmpdir(), "gate-keep-"));
     try {
       const tool = registerGateReviewTool();
-      mkdirSync(join(cwd, "docs/features/search-v2"), { recursive: true });
+      mkdirSync(join(cwd, ".harness/features/search-v2"), { recursive: true });
       writeFileSync(
-        join(cwd, "docs/features/search-v2/03_GATE_REVIEW.md"),
+        join(cwd, ".harness/features/search-v2/03_GATE_REVIEW.md"),
         "# manual content\n",
       );
 
@@ -63,9 +63,9 @@ describe("harness_gate_review", () => {
   it("check returns blocked when explicit BLOCKER bullets are present", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "gate-blocked-"));
     try {
-      mkdirSync(join(cwd, "docs/features/payment"), { recursive: true });
+      mkdirSync(join(cwd, ".harness/features/payment"), { recursive: true });
       writeFileSync(
-        join(cwd, "docs/features/payment/03_GATE_REVIEW.md"),
+        join(cwd, ".harness/features/payment/03_GATE_REVIEW.md"),
         [
           "# Gate Review",
           "## 3. 阻塞项（Blocker）",
@@ -98,9 +98,9 @@ describe("harness_gate_review", () => {
   it("check returns passed only when no blockers and 通过 is checked", async () => {
     const cwd = mkdtempSync(join(tmpdir(), "gate-passed-"));
     try {
-      mkdirSync(join(cwd, "docs/features/empty"), { recursive: true });
+      mkdirSync(join(cwd, ".harness/features/empty"), { recursive: true });
       writeFileSync(
-        join(cwd, "docs/features/empty/03_GATE_REVIEW.md"),
+        join(cwd, ".harness/features/empty/03_GATE_REVIEW.md"),
         [
           "# Gate Review",
           "## 3. 阻塞项（Blocker）",

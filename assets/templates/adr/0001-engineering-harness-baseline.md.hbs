@@ -8,7 +8,7 @@
 
 ## Decision
 - 使用 Harness Engineering MCP 作为工程治理基座。
-- 使用 `harness.config.json` 作为项目级机器可读配置。
+- 使用 `.harness/config.json` 作为项目级机器可读配置（v0.2 起所有 harness 产物收拢到 `.harness/`）。
 - 使用 `harness_route_task` 路由日常任务到对应 skill。
 - 提交前执行 `harness_check` 并达到 PASS。
 

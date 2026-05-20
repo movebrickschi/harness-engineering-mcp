@@ -3,6 +3,7 @@ import { join, relative, sep } from "node:path";
 import type { GateReviewToolInput, GateReviewToolOutput } from "../../types/harness.js";
 import type { ToolDefinition } from "../../types/mcp.js";
 import { assetsRoot } from "../../core/assets.js";
+import { featureDirPath, gateReviewPath } from "../../core/paths.js";
 
 const inputSchema = {
   type: "object",
@@ -24,8 +25,8 @@ export function registerGateReviewTool(): ToolDefinition<
       "Generate or check 03_GATE_REVIEW.md for a feature. action=generate creates the review entry from the bundled 8-dimension template; action=check parses an existing file and returns BLOCKER list, conditional items, and pass/fail state.",
     inputSchema: inputSchema as unknown as Record<string, unknown>,
     handler: async (input) => {
-      const featureDir = join(input.cwd, "docs/features", input.feature_name);
-      const target = join(featureDir, "03_GATE_REVIEW.md");
+      const featureDir = join(input.cwd, featureDirPath(input.feature_name));
+      const target = join(input.cwd, gateReviewPath(input.feature_name));
       const action = input.action ?? "generate";
       const filePathOut = toPortablePath(input.cwd, target);
 
@@ -112,14 +113,19 @@ function analyzeGateReview(content: string): GateReviewAnalysis {
   const lines = content.split(/\r?\n/);
   const blockers: string[] = [];
   const conditionals: string[] = [];
+  const blockerRe = /^\s*(?:[-*>]|\d+[.)]\s*)?(?:\[[ ]\]\s*)?[\s*]*\**BLOCKER\**\s*[:：]/i;
+  const resolvedRe = /\[\s*[xX✓✔]\s*\]/;
+  const conditionalRe = /^\s*(?:[-*>]|\d+[.)]\s*)?(?:\[[ ]\]\s*)?[\s*]*\**CONDITIONAL\**\s*[:：]/i;
+  const stripRe = /^\s*(?:[-*>]|\d+[.)]\s*)?(?:\[[ ]\]\s*)?[\s*]*\**(?:BLOCKER|CONDITIONAL)\**\s*[:：]\s*/i;
   for (const line of lines) {
-    if (/^\s*[-*]\s*BLOCKER\s*[:：]/i.test(line)) {
-      const text = line.replace(/^\s*[-*]\s*BLOCKER\s*[:：]\s*/i, "").trim();
+    if (resolvedRe.test(line)) continue;
+    if (blockerRe.test(line)) {
+      const text = line.replace(stripRe, "").trim();
       if (text && !text.startsWith("(示例)") && !/^B-\d+/.test(text)) {
         blockers.push(text);
       }
-    } else if (/^\s*[-*]\s*CONDITIONAL\s*[:：]/i.test(line)) {
-      const text = line.replace(/^\s*[-*]\s*CONDITIONAL\s*[:：]\s*/i, "").trim();
+    } else if (conditionalRe.test(line)) {
+      const text = line.replace(stripRe, "").trim();
       if (text && !text.startsWith("(示例)")) conditionals.push(text);
     }
   }
@@ -137,7 +143,7 @@ function analyzeGateReview(content: string): GateReviewAnalysis {
 }
 
 function parseStructuredBlockers(content: string): string[] {
-  const sectionMatch = content.match(/##\s*3\.[^\n]*Blocker[^\n]*([\s\S]*?)(?=##\s*4\.|$)/i);
+  const sectionMatch = content.match(/##\s*(?:\d+\.?\s*)?[^\n]*Blocker[^\n]*([\s\S]*?)(?=##|$)/i);
   if (!sectionMatch) return [];
   const section = sectionMatch[1] ?? "";
   const found: string[] = [];

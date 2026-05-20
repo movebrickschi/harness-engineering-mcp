@@ -23,7 +23,7 @@ AI 自动跑：
    → MCP 扫描 pom.xml / package.json → 返回 detected + ask_user
 2. AI 把缺失字段问你（mode / project_name 等）
 3. 收齐再调一次 harness_init({...})
-   → 生成 harness.config.json + 5 个文件
+   → 生成 .harness/config.json + 5 个文件
 4. AI 报告 "已接入"，附 next_steps
 ```
 
@@ -84,7 +84,7 @@ AI 自动：
 ```
 1. harness_upgrade_mode to=mid-team
    → 自动生成 CHANGELOG / PR 模板 / .github/CODEOWNERS
-   → docs/oncall.md / docs/SLO.md
+   → .harness/oncall.md / .harness/SLO.md
 2. harness_check --strict 验证新门禁
 ```
 
@@ -127,11 +127,12 @@ AI 会通过 URI 引用（**不消耗 token**）加载 spec/rule/skill 全集到
 
 ---
 
-## 3. 6 个工具的"不需记忆"映射
+## 3. 7 个工具的"不需记忆"映射
 
 | 想做什么 | 你说什么 | AI 自动调用 |
 |---|---|---|
 | 接入新项目 | 「接入 Harness」 | `harness_init` |
+| 强制按模板重生成 | 「按模板重新生成 / 强制 init」 | `harness_init` w/ `force=true` |
 | 一句话需求 | 直接描述需求 | `harness_route_task` + `harness_load_skill` |
 | 修 bug | 直接描述报错现象 | `harness_route_task` → bugfix-flow |
 | 性能优化 | 「性能优化 / 太慢」 | `harness_route_task` → perf-flow |
@@ -140,6 +141,7 @@ AI 会通过 URI 引用（**不消耗 token**）加载 spec/rule/skill 全集到
 | 跑门禁 | 「跑一次 harness check」 | `harness_check` |
 | 闸门评审 | 「为 X 功能做 Gate Review」 | `harness_gate_review` |
 | 升档 | 「升档到 mid-team」 | `harness_upgrade_mode` |
+| 清除 / 不再用 harness | 「卸载 harness / 清空 `.harness/`」 | `harness_uninstall`（CHANGELOG.md / .github/* 自动保留）|
 
 **你越少提工具名，AI 表现越好** —— 路由器比手挑更准。
 
@@ -157,7 +159,7 @@ AI 会通过 URI 引用（**不消耗 token**）加载 spec/rule/skill 全集到
 | `harness://skills/ai-efficiency` | 高效执行 skill 正文（6 阶段清单）|
 | `harness://skills/dev-flow` | 开发组合拳路由器（含 mermaid 决策图）|
 | `harness://rules/16-ai-efficiency.mdc` | 10 条 token-saving 硬规则 |
-| `harness://config/schema` | `harness.config.json` 完整 JSON Schema |
+| `harness://config/schema` | `.harness/config.json` 完整 JSON Schema |
 | `harness://skills/index` | 所有 skill 的 JSON 元数据列表 |
 | `harness://rules/index` | 所有 rule + applies_to 标签 |
 
@@ -196,7 +198,7 @@ AI 会通过 URI 引用（**不消耗 token**）加载 spec/rule/skill 全集到
 
 | 能力 | Cursor | Claude Code | Codex CLI |
 |---|---|---|---|
-| 6 个工具 | ✅ | ✅ | ✅ |
+| 7 个工具（含 `harness_uninstall`）| ✅ | ✅ | ✅ |
 | `harness://spec/*` URI | ✅ | ✅ | ⚠ 部分 |
 | `harness://skills/*` URI | ✅ | ✅ | ⚠ 通过工具替代 |
 | `--run-tests` 真实跑测试 | ✅ | ✅ | ✅ |
@@ -212,9 +214,9 @@ AI 会通过 URI 引用（**不消耗 token**）加载 spec/rule/skill 全集到
 | 现象 | 原因 | 修复 |
 |---|---|---|
 | AI 不调任何 harness_* 工具 | 没看到 MCP server | 重启 IDE / 检查 `mcp.json` 路径 |
-| AI 自己生成 `harness.config.json` 而非调 init | 没意识到有 MCP | 用开场白模板（§2）显式提醒 |
+| AI 自己生成 `.harness/config.json` 而非调 init | 没意识到有 MCP | 用开场白模板（§2）显式提醒 |
 | `harness_check` 总报 `config.exists FAIL` | 项目未 init | 先调 `harness_init` |
-| `tests.exec` 提示 `无法为 stack=other 推断` | stack=other 没绑测试器 | 改 `harness.config.json` 的 `project.stack` |
+| `tests.exec` 提示 `无法为 stack=other 推断` | stack=other 没绑测试器 | 改 `.harness/config.json` 的 `project.stack` |
 | `harness_route_task` 路由不到合适 skill | 任务描述太抽象 | 加上 `context: {scope, has_prd, has_prototype}` |
 | AI 把 `harness://...` URI 当普通字符串 | IDE 不支持 MCP resources（旧版）| 升级 IDE 或改用 `harness_load_skill` |
 
@@ -231,7 +233,7 @@ AI 会通过 URI 引用（**不消耗 token**）加载 spec/rule/skill 全集到
 每阶段交付物按 skill 内的清单产出，关键节点跑 harness_check 和 harness_gate_review。
 ```
 
-AI 不会跳步，所有产物（01-06_*.md）会按规范落在 `docs/features/<name>/`。
+AI 不会跳步，所有产物（01-06_*.md）会按规范落在 `.harness/features/<name>/`。
 
 ---
 

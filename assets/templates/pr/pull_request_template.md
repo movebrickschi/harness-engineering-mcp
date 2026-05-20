@@ -1,6 +1,6 @@
 <!--
   Engineering Harness PR 模板
-  规则与流程见 docs/engineering-harness.md 与 CONTRIBUTING.md
+  规则与流程见 .harness/engineering-harness.md 与 CONTRIBUTING.md
   非 hotfix 类 PR 必须填写本模板各项；不适用项写「N/A」并简述原因。
 -->
 
@@ -8,9 +8,9 @@
 
 <!-- 这是什么需求 / Bug / 重构 / 性能优化？关联的需求文档或任务 ID。 -->
 
-- 任务 ID：T-XXXX（与 `docs/features/INDEX.md` 一致；一句话需求可直接写需求描述）
-- 关联文档：`docs/features/<feature>/` 或 `feature-brief.md` 或 PR 描述中
-- 关联 ADR：`docs/adr/NNNN-...md` 或「不需要」
+- 任务 ID：T-XXXX（与 `.harness/features/INDEX.md` 一致；一句话需求可直接写需求描述）
+- 关联文档：`.harness/features/<feature>/` 或 `feature-brief.md` 或 PR 描述中
+- 关联 ADR：`.harness/adr/NNNN-...md` 或「不需要」
 
 ## 2. 改动概览
 
@@ -72,8 +72,8 @@ Summary:   ? PASS / ? WARN / ? FAIL / ? SKIP
 ## 8. 文档与 ADR
 
 - [ ] 模块文档（`apps/api/docs/*.md`）已更新或不适用
-- [ ] `docs/features/INDEX.md` 已更新状态
-- [ ] 涉及决策：已新增 ADR `docs/adr/NNNN-...md`（或「不需要」）
+- [ ] `.harness/features/INDEX.md` 已更新状态
+- [ ] 涉及决策：已新增 ADR `.harness/adr/NNNN-...md`（或「不需要」）
 - [ ] Swagger 注解齐全
 
 ## 9. 紧急通道（仅 hotfix 时填写）
@@ -102,7 +102,7 @@ Summary:   ? PASS / ? WARN / ? FAIL / ? SKIP
 - 监控指标：
 
 <!--
-  审查者请遵循 docs/engineering-harness.md 第 5 章「回退路由」：
+  审查者请遵循 .harness/engineering-harness.md 第 5 章「回退路由」：
   发现必改项 → 退回开发；发现设计跑偏 → 退回方案设计；
   Reviewer 不直接修代码。
 -->

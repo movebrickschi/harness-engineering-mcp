@@ -12,6 +12,7 @@ import { registerRouteTool } from "./tools/route.js";
 import { registerLoadSkillTool } from "./tools/load-skill.js";
 import { registerGateReviewTool } from "./tools/gate-review.js";
 import { registerUpgradeTool } from "./tools/upgrade.js";
+import { registerUninstallTool } from "./tools/uninstall.js";
 import { registerSpecResources } from "./resources/spec.js";
 import { registerSkillsResources } from "./resources/skills.js";
 import { registerRulesResources } from "./resources/rules.js";
@@ -29,7 +30,7 @@ export function createMcpServer(options: ServerOptions = {}): Server {
   const server = new Server(
     {
       name: options.serverName ?? "harness-engineering-mcp",
-      version: options.serverVersion ?? "0.1.0",
+      version: options.serverVersion ?? "0.2.0",
     },
     {
       capabilities: {
@@ -46,6 +47,7 @@ export function createMcpServer(options: ServerOptions = {}): Server {
     registerLoadSkillTool() as AnyToolDef,
     registerGateReviewTool() as AnyToolDef,
     registerUpgradeTool() as AnyToolDef,
+    registerUninstallTool() as AnyToolDef,
   ];
 
   server.setRequestHandler(ListToolsRequestSchema, async () => ({
@@ -128,7 +130,7 @@ export async function startMcpServer(options: ServerOptions = {}): Promise<void>
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(
-    `[harness-mcp] started ${options.serverName ?? "harness-engineering-mcp"} v${options.serverVersion ?? "0.1.0"} on stdio\n`,
+    `[harness-mcp] started ${options.serverName ?? "harness-engineering-mcp"} v${options.serverVersion ?? "0.2.0"} on stdio\n`,
   );
 }
 

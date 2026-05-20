@@ -23,13 +23,13 @@ min_level: L1
 | applies_to | frontmatter 字段，声明文件适用的 mode 集合。 |
 | min_level | frontmatter 字段，声明文件最低适用成熟度。 |
 | optional_for | frontmatter 字段，声明该 mode 下整篇可跳过。 |
-| Project Memory | 项目级长期记忆，主要是 `docs/features/` + ADR + Post-mortem。 |
+| Project Memory | 项目级长期记忆，主要是 `.harness/features/` + ADR + Post-mortem。 |
 | Feature Brief | 一句话需求 mini-PRD。 |
 | Feature Stages | 阶段文档（01_REQUIREMENT_ANALYSIS ... 06_TEST_REPORT）。 |
 | Two Gates | 一句话需求两道门：清晰度门 + 影响风险门。 |
 | Rollback Routing | 失败时退回的目标阶段路由表。 |
 | Emergency Channel | 紧急通道，可跳过部分流程的快速通路。 |
-| baseline | `verification_baseline.json`，质量基线。 |
+| baseline | `.harness/baseline.json`，质量基线。 |
 | engineering-check | 本地门禁脚本，机械化扫描多组检查项。 |
 | SemVer | Semantic Versioning，语义化版本号。 |
 | CHANGELOG | 用户视角的版本变更日志。 |
@@ -64,6 +64,6 @@ min_level: L1
 | Trace | 留痕，记录 Agent 操作的可追溯信息。 |
 | Skill | `.cursor/skills/` 下的任务执行流程定义。 |
 | Rule | `.cursor/rules/` 下的编码硬规范。 |
-| harness.config.json | 项目级机器可读 Harness 配置。 |
+| .harness/config.json | 项目级机器可读 Harness 配置。 |
 | Stack Adapter | 各技术栈的适配指南，位于 STACK_ADAPTERS/。 |
 | Antipattern | 反模式，应避免的做法。 |

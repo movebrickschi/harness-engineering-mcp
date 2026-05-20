@@ -16,9 +16,9 @@ project_types: [backend-service, library, cli, frontend-spa]
 ## 1. 三十秒入门
 
 1. 选模式：`solo` / `small-team` / `mid-team` / `org`
-2. 复制 `templates/entry/harness.config.<mode>.json` 到项目根，重命名为 `harness.config.json`
+2. 复制 `templates/entry/harness.config.<mode>.json` 到项目根，重命名为 `.harness/config.json`
 3. 按 [`BOOTSTRAP_CHECKLIST.md`](BOOTSTRAP_CHECKLIST.md) 对应模式段落落地最小集
-4. 后续如有升档诉求，仅改 `harness.config.json.mode` 字段，无需迁移文件
+4. 后续如有升档诉求，仅改 `.harness/config.json.mode` 字段，无需迁移文件
 
 ---
 
@@ -114,7 +114,7 @@ optional_for: [solo]                            # 该规模下整篇可跳过
 
 ### 3.3 工具消费
 
-- [`scripts/engineering-check.{ps1,sh}.skel`](templates/scripts/) 启动读 `harness.config.json.mode`，跳过不匹配的检查项
+- [`scripts/engineering-check.{ps1,sh}.skel`](templates/scripts/) 启动读 `.harness/config.json.mode`，跳过不匹配的检查项
 - AI Agent / IDE 可按 mode 过滤装载
 - CI 工作流按 mode 启停 SCA / SBOM / SLO 上报步骤
 
@@ -167,7 +167,7 @@ flowchart LR
 | 本规范包 | 定义规则、模板、门禁、回退路由、基线 |
 | `.cursor/skills` | 任务执行流程（dev-flow / bugfix-flow / brainstorming 等） |
 | `.cursor/rules` | 项目内编码硬规范（API / 数据库 / 日志 / 安全 / 注释） |
-| `harness.config.json` | 项目当前模式与基线，驱动工具按 mode 行为 |
+| `.harness/config.json` | 项目当前模式与基线，驱动工具按 mode 行为 |
 
 互不替代：规范定 What，skills 定 How，rules 定 Code Style。
 
@@ -183,7 +183,7 @@ flowchart TD
   pickMode -->|"5-15 人"| mid[mode=mid-team]
   pickMode -->|"30+ 人"| org[mode=org]
   solo & small & mid & org --> copy["cp -R templates/entry 到项目根"]
-  copy --> rename["重命名 harness.config.<mode>.json 为 harness.config.json"]
+  copy --> rename["重命名 harness.config.<mode>.json 为 .harness/config.json"]
   rename --> bootstrap["按 BOOTSTRAP_CHECKLIST 对应段落落地"]
   bootstrap --> verify["跑 engineering-check 验证"]
   verify --> done[L1 达成]

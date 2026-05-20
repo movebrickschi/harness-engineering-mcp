@@ -1,6 +1,6 @@
 # Feature 阶段文档模板
 
-复制本目录到 `docs/features/<feature-kebab-name>/` 作为新需求的起点。
+复制本目录到 `.harness/features/<feature-kebab-name>/` 作为新需求的起点。
 
 ## 文件清单
 
@@ -20,7 +20,7 @@
 
 每份文档顶部维护：
 
-- **任务 ID**：与 `docs/features/INDEX.md` 一致
+- **任务 ID**：与 `.harness/features/INDEX.md` 一致
 - **状态**：`Draft` / `Approved` / `Outdated`
 - **更新时间**：YYYY-MM-DD
 

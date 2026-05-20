@@ -195,7 +195,7 @@ project_types: [backend-service, library, cli, frontend-spa]
 | ISO 27001 | 通用信息安全 |
 | SOC 2 | SaaS 服务 |
 
-`harness.config.json.modules.security.compliance` 字段声明启用的框架，CI 据此启停对应检查。
+`.harness/config.json.modules.security.compliance` 字段声明启用的框架，CI 据此启停对应检查。
 
 ---
 

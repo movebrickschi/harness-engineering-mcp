@@ -9,6 +9,7 @@ import type {
   CheckToolOutput,
 } from "../../types/harness.js";
 import { loadHarnessConfig } from "../config/loader.js";
+import { HARNESS_PATHS } from "../paths.js";
 
 type Category = NonNullable<CheckToolInput["categories"]>[number];
 
@@ -25,12 +26,12 @@ const CHECKS: CheckRunner[] = [
     category: "config",
     id: "config.exists",
     run: (cwd) =>
-      existsSync(join(cwd, "harness.config.json"))
-        ? ok("config", "config.exists", "harness.config.json 存在")
+      existsSync(join(cwd, HARNESS_PATHS.config))
+        ? ok("config", "config.exists", `${HARNESS_PATHS.config} 存在`)
         : fail(
             "config",
             "config.exists",
-            "缺少 harness.config.json，请运行 harness init",
+            `缺少 ${HARNESS_PATHS.config}，请运行 harness init`,
           ),
   },
   {
@@ -38,7 +39,7 @@ const CHECKS: CheckRunner[] = [
     id: "config.valid",
     run: (cwd) => {
       const cfg = safeLoadConfig(cwd);
-      if (!cfg) return warn("config", "config.valid", "harness.config.json 缺失，跳过解析");
+      if (!cfg) return warn("config", "config.valid", `${HARNESS_PATHS.config} 缺失，跳过解析`);
       if (!cfg.project?.mode) return fail("config", "config.valid", "config.project.mode 缺失");
       return ok("config", "config.valid", `mode=${cfg.project.mode} stack=${cfg.project.stack}`);
     },
@@ -47,36 +48,36 @@ const CHECKS: CheckRunner[] = [
     category: "structure",
     id: "structure.ssot",
     run: (cwd) =>
-      existsSync(join(cwd, "docs/engineering-harness.md"))
-        ? ok("structure", "structure.ssot", "SSOT docs/engineering-harness.md 存在")
+      existsSync(join(cwd, HARNESS_PATHS.ssot))
+        ? ok("structure", "structure.ssot", `SSOT ${HARNESS_PATHS.ssot} 存在`)
         : warn(
             "structure",
             "structure.ssot",
-            "缺少 docs/engineering-harness.md，建议 harness init 重生成",
+            `缺少 ${HARNESS_PATHS.ssot}，建议 harness init 重生成`,
           ),
   },
   {
     category: "structure",
     id: "structure.adr",
     run: (cwd) => {
-      const adrDir = join(cwd, "docs/adr");
-      if (!existsSync(adrDir)) return warn("structure", "structure.adr", "缺少 docs/adr/ 目录");
+      const adrDir = join(cwd, HARNESS_PATHS.adrDir);
+      if (!existsSync(adrDir)) return warn("structure", "structure.adr", `缺少 ${HARNESS_PATHS.adrDir}/ 目录`);
       const adrs = readdirSync(adrDir).filter((f) => f.endsWith(".md"));
       return adrs.length > 0
         ? ok("structure", "structure.adr", `${adrs.length} 条 ADR`)
-        : warn("structure", "structure.adr", "docs/adr/ 下尚无 ADR 记录");
+        : warn("structure", "structure.adr", `${HARNESS_PATHS.adrDir}/ 下尚无 ADR 记录`);
     },
   },
   {
     category: "structure",
     id: "structure.features",
     run: (cwd) =>
-      existsSync(join(cwd, "docs/features/INDEX.md"))
+      existsSync(join(cwd, HARNESS_PATHS.featuresIndex))
         ? ok("structure", "structure.features", "features 任务看板存在")
         : warn(
             "structure",
             "structure.features",
-            "缺少 docs/features/INDEX.md（任务记忆入口）",
+            `缺少 ${HARNESS_PATHS.featuresIndex}（任务记忆入口）`,
           ),
   },
   {
@@ -181,28 +182,28 @@ const CHECKS: CheckRunner[] = [
     category: "baseline",
     id: "baseline.exists",
     run: (cwd) =>
-      existsSync(join(cwd, "verification_baseline.json"))
-        ? ok("baseline", "baseline.exists", "verification_baseline.json 存在")
+      existsSync(join(cwd, HARNESS_PATHS.baseline))
+        ? ok("baseline", "baseline.exists", `${HARNESS_PATHS.baseline} 存在`)
         : warn(
             "baseline",
             "baseline.exists",
-            "缺少 verification_baseline.json，建议 harness init 重生成",
+            `缺少 ${HARNESS_PATHS.baseline}，建议 harness init 重生成`,
           ),
   },
   {
     category: "baseline",
     id: "baseline.valid",
     run: (cwd) => {
-      const baselinePath = join(cwd, "verification_baseline.json");
+      const baselinePath = join(cwd, HARNESS_PATHS.baseline);
       if (!existsSync(baselinePath)) {
-        return warn("baseline", "baseline.valid", "verification_baseline.json 缺失，跳过解析");
+        return warn("baseline", "baseline.valid", `${HARNESS_PATHS.baseline} 缺失，跳过解析`);
       }
       const baseline = safeReadJson<Record<string, unknown>>(baselinePath);
       if (!baseline) {
-        return fail("baseline", "baseline.valid", "verification_baseline.json 不是合法 JSON");
+        return fail("baseline", "baseline.valid", `${HARNESS_PATHS.baseline} 不是合法 JSON`);
       }
       if (typeof baseline.version !== "string") {
-        return fail("baseline", "baseline.valid", "verification_baseline.version 缺失");
+        return fail("baseline", "baseline.valid", `${HARNESS_PATHS.baseline} version 字段缺失`);
       }
       return ok("baseline", "baseline.valid", `baseline version=${baseline.version}`);
     },
@@ -214,6 +215,98 @@ const CHECKS: CheckRunner[] = [
       existsSync(join(cwd, "README.md"))
         ? ok("docs", "docs.readme", "README.md 存在")
         : warn("docs", "docs.readme", "缺少 README.md"),
+  },
+  {
+    category: "structure",
+    id: "structure.feature_completeness",
+    run: (cwd) => {
+      const featuresDir = join(cwd, HARNESS_PATHS.featuresDir);
+      if (!existsSync(featuresDir)) return ok("structure", "structure.feature_completeness", "尚无 feature 目录");
+      const cfg = safeLoadConfig(cwd);
+      const gateRequired = cfg?.modules?.process?.gate_review_enabled === true;
+      const expectedPrefixes = ["01_", "02_", "04_", "05_", "06_"];
+      if (gateRequired) expectedPrefixes.splice(2, 0, "03_");
+      const entries = readdirSync(featuresDir).filter(
+        (d) => d !== "_template" && d !== "INDEX.md" && statSync(join(featuresDir, d)).isDirectory(),
+      );
+      if (entries.length === 0)
+        return ok("structure", "structure.feature_completeness", "尚无 feature 子目录");
+      const warnings: string[] = [];
+      for (const feat of entries) {
+        const files = readdirSync(join(featuresDir, feat));
+        const hasStaged = files.some((f) => /^0\d_/.test(f));
+        if (!hasStaged) continue;
+        const missing = expectedPrefixes.filter((p) => !files.some((f) => f.startsWith(p)));
+        if (missing.length > 0)
+          warnings.push(`feature '${feat}' 缺少阶段文档: ${missing.map((p) => p.replace(/_$/, "")).join(", ")}`);
+      }
+      if (warnings.length > 0)
+        return warn("structure", "structure.feature_completeness", warnings.join("; "));
+      return ok("structure", "structure.feature_completeness", `${entries.length} 个 feature 文档完整`);
+    },
+  },
+  {
+    category: "secrets",
+    id: "secrets.gitignore",
+    run: (cwd) => {
+      const giPath = join(cwd, ".gitignore");
+      if (!existsSync(giPath))
+        return warn("secrets", "secrets.gitignore", "缺少 .gitignore，建议创建并添加 node_modules/dist/.env");
+      const gi = readFileSync(giPath, "utf-8");
+      const required = ["node_modules", "dist", ".env"];
+      const missing = required.filter((r) => !gi.split(/\r?\n/).some((l) => l.trim() === r || l.trim().startsWith(r + "/")));
+      if (missing.length > 0)
+        return warn("secrets", "secrets.gitignore", `.gitignore 缺少以下排除项: ${missing.join(", ")}`);
+      return ok("secrets", "secrets.gitignore", ".gitignore 包含关键排除项");
+    },
+  },
+  {
+    category: "tests",
+    id: "quality.coverage",
+    when: () => true,
+    run: (cwd) => {
+      const cfg = safeLoadConfig(cwd);
+      const threshold = cfg?.modules?.quality?.coverage_baseline;
+      if (typeof threshold !== "number" || threshold <= 0)
+        return ok("tests", "quality.coverage", "未设置覆盖率基线，跳过");
+      const baseline = safeReadJson<{ coverage?: { baseline?: number } }>(join(cwd, HARNESS_PATHS.baseline));
+      if (!baseline?.coverage || typeof baseline.coverage.baseline !== "number")
+        return warn("tests", "quality.coverage", `${HARNESS_PATHS.baseline} 缺少 coverage.baseline 字段`);
+      const actual = baseline.coverage.baseline;
+      if (actual < threshold)
+        return warn("tests", "quality.coverage", `覆盖率基线 ${(actual * 100).toFixed(0)}% 低于配置门槛 ${(threshold * 100).toFixed(0)}%`);
+      return ok("tests", "quality.coverage", `覆盖率基线 ${(actual * 100).toFixed(0)}% ≥ 配置门槛 ${(threshold * 100).toFixed(0)}%`);
+    },
+  },
+  {
+    category: "structure",
+    id: "quality.pr_size",
+    run: async (cwd) => {
+      const cfg = safeLoadConfig(cwd);
+      const maxLines = cfg?.modules?.people?.pr_max_lines;
+      const maxFiles = cfg?.modules?.people?.pr_max_files;
+      if (!maxLines && !maxFiles)
+        return ok("structure", "quality.pr_size", "未设置 PR 大小限制，跳过");
+      const gitDir = join(cwd, ".git");
+      if (!existsSync(gitDir))
+        return warn("structure", "quality.pr_size", "非 git 仓库，跳过 PR 大小检查");
+      const diff = await runCommand("git", ["diff", "--stat", "HEAD"], cwd, 10_000);
+      if (diff.spawnError || diff.exitCode !== 0)
+        return warn("structure", "quality.pr_size", "无法执行 git diff，跳过");
+      const statLines = (diff.stdout + diff.stderr).split(/\r?\n/).filter(Boolean);
+      const summaryLine = statLines[statLines.length - 1] ?? "";
+      const filesMatch = summaryLine.match(/(\d+)\s+files?\s+changed/);
+      const insertMatch = summaryLine.match(/(\d+)\s+insertions?/);
+      const deleteMatch = summaryLine.match(/(\d+)\s+deletions?/);
+      const changedFiles = parseInt(filesMatch?.[1] ?? "0", 10);
+      const totalLines = parseInt(insertMatch?.[1] ?? "0", 10) + parseInt(deleteMatch?.[1] ?? "0", 10);
+      const issues: string[] = [];
+      if (maxLines && totalLines > maxLines) issues.push(`${totalLines} 行 > 限制 ${maxLines} 行`);
+      if (maxFiles && changedFiles > maxFiles) issues.push(`${changedFiles} 文件 > 限制 ${maxFiles} 文件`);
+      if (issues.length > 0)
+        return warn("structure", "quality.pr_size", `当前变更超限: ${issues.join(", ")}，建议拆分`);
+      return ok("structure", "quality.pr_size", `变更 ${totalLines} 行 / ${changedFiles} 文件，在限制内`);
+    },
   },
 ];
 

@@ -76,7 +76,7 @@ CI 校验该字段非空。
 | 紧急通道 | - | 严禁 Auto | 人执行 |
 | 跑测试 / 跑构建 | yes | - | CI 留痕 |
 
-阈值在 `harness.config.json.ai_agent` 可项目级覆盖：
+阈值在 `.harness/config.json.ai_agent` 可项目级覆盖：
 
 ```json
 {

@@ -87,7 +87,7 @@ project_types: [backend-service, library, cli, frontend-spa]
 
 ### 2.2 L1 · Project context 层（半稳定）
 
-- `harness.config.json` + `docs/engineering-harness.md` + `verification_baseline.json`
+- `.harness/config.json` + `.harness/engineering-harness.md` + `.harness/baseline.json`
 - 每个项目稳定 ~周级别
 - 用 MCP 工具按需读，**不要**把它们重复贴进每轮 prompt
 
@@ -137,7 +137,7 @@ project_types: [backend-service, library, cli, frontend-spa]
 | Prompt cache 命中率 | ≥ 60% | 大模型 API 报告 |
 | Subagent 委派率（> 3 文件检索）| ≥ 80% | dispatch 日志 |
 
-mid-team+ 项目应该把这些指标采进 `docs/DORA.md` 之外的「AI Efficiency Board」，自下而上推动改善。
+mid-team+ 项目应该把这些指标采进 `.harness/DORA.md` 之外的「AI Efficiency Board」，自下而上推动改善。
 
 ---
 

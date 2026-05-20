@@ -29,7 +29,7 @@ describe("CLI M2 wrappers", () => {
         "--name",
         "cli-project",
       ]);
-      expect(existsSync(join(cwd, "harness.config.json"))).toBe(true);
+      expect(existsSync(join(cwd, ".harness/config.json"))).toBe(true);
 
       await runCli(["node", "harness", "check", "-C", cwd, "--json"]);
       const output = log.mock.calls.map((call) => String(call[0])).join("\n");

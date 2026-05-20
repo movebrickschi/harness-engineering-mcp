@@ -11,7 +11,11 @@ harness route "一句话需求"
 
 ## Harness 入口
 
-- `harness.config.json`: 项目级机器可读配置
-- `docs/engineering-harness.md`: 项目工程治理 SSOT
-- `docs/features/INDEX.md`: 任务记忆与阶段文档入口
-- `docs/adr/`: 架构决策记录
+所有 harness 自身产物统一收拢在 `.harness/` 目录下：
+
+- `.harness/config.json`: 项目级机器可读配置
+- `.harness/baseline.json`: 验证基线（测试 / 覆盖率）
+- `.harness/engineering-harness.md`: 项目工程治理 SSOT
+- `.harness/features/INDEX.md`: 任务记忆与阶段文档入口
+- `.harness/adr/`: 架构决策记录
+- `.harness/scripts/engineering-check.{ps1,sh}`: 本地门禁脚本

@@ -17,9 +17,9 @@ project_types: [backend-service, library, cli, frontend-spa]
 |---|---|---|---|---|
 | **L0** | **企业法务 / 合规硬约束** | `assets/spec/05-security-and-compliance.md` 内被标 `[compliance:gdpr/pipl/hipaa]` 的子项 | 必须 | 不可 |
 | **L1** | **Hard rules（rules/）** | `assets/rules/*.mdc` | 必须，违反 = CI FAIL | 可在项目 `.cursor/rules/` 局部覆盖单条 |
-| **L2** | **Spec 模块（applies_to 命中当前 mode）** | `assets/spec/01..06_*.md` + 专题（DORA / MATURITY 等）| 必须，违反需 ADR 解释 | 可通过 `harness.config.json.modules.*` 关闭模块开关 |
+| **L2** | **Spec 模块（applies_to 命中当前 mode）** | `assets/spec/01..06_*.md` + 专题（DORA / MATURITY 等）| 必须，违反需 ADR 解释 | 可通过 `.harness/config.json.modules.*` 关闭模块开关 |
 | **L3** | **Skill 流程（建议）** | `assets/skills/<name>/SKILL.md` | 推荐遵循，可记录理由跳步 | 可在项目内 fork 后改 |
-| **L4** | **项目本地约定** | `<project>/docs/engineering-harness.md` 自添加部分 | 在本项目内有效 | — |
+| **L4** | **项目本地约定** | `<project>/.harness/engineering-harness.md` 自添加部分 | 在本项目内有效 | — |
 
 ---
 
@@ -49,7 +49,7 @@ L3 与 L4 → L4 胜（本地优先）
 
 ### 2.3 当前未定义情况
 
-任意冲突在本规范找不到裁决项 → 写 RFC（org 模式下走 `docs/rfc/`），不要"凭感觉决定"。
+任意冲突在本规范找不到裁决项 → 写 RFC（org 模式下走 `.harness/rfc/`），不要"凭感觉决定"。
 
 ---
 
@@ -66,11 +66,11 @@ override_reason: "本项目不使用 MyBatis，使用 jOOQ"
 ---
 ```
 
-`harness_check` 在扫描时跳过该 rule，并把覆盖原因记录到 `verification_baseline.json`。
+`harness_check` 在扫描时跳过该 rule，并把覆盖原因记录到 `.harness/baseline.json`。
 
 ### 3.2 关闭 spec 模块
 
-`harness.config.json` 内：
+`.harness/config.json` 内：
 
 ```json
 {

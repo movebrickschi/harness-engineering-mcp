@@ -56,7 +56,7 @@ project_types: [backend-service, library, cli, frontend-spa]
 
 ### 2.2 写入基线
 
-阈值写入 [`verification_baseline.json`](../../verification_baseline.json)；CI / 本地脚本对比。
+阈值写入 [`.harness/baseline.json`](../../.harness/baseline.json)；CI / 本地脚本对比。
 
 ```json
 {
@@ -155,10 +155,10 @@ project_types: [backend-service, library, cli, frontend-spa]
 
 ### 4.3 mode 驱动
 
-脚本启动读 `harness.config.json.mode`：
+脚本启动读 `.harness/config.json.mode`：
 - solo：跳过 Review SLA / On-call / SLO 检查
 - mid-team+：启用全部
-- 项目级覆盖：`harness.config.json.checks.<id>.enabled`
+- 项目级覆盖：`.harness/config.json.checks.<id>.enabled`
 
 ---
 
@@ -185,7 +185,7 @@ jobs:
 
 ### 5.3 baseline 强约束 [L2+]
 
-CI 读 `verification_baseline.json`：
+CI 读 `.harness/baseline.json`：
 - 测试数量 < 基线 -> FAIL
 - 覆盖率 < 基线 -> FAIL（L3+）
 - 检查项数 < 基线 -> FAIL
@@ -198,7 +198,7 @@ CI 读 `verification_baseline.json`：
 
 ### 6.1 字段
 
-参考 [`templates/entry/verification_baseline.json.tmpl`](templates/entry/verification_baseline.json.tmpl)：
+参考 [`templates/entry/.harness/baseline.json.tmpl`](templates/entry/.harness/baseline.json.tmpl)：
 
 ```json
 {

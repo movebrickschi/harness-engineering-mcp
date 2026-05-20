@@ -45,7 +45,7 @@ sequenceDiagram
 
 ## 6. 历史任务关联
 
-参考 [`docs/features/INDEX.md`](../INDEX.md) 检索：
+参考 [`.harness/features/INDEX.md`](../INDEX.md) 检索：
 
 | 任务 ID | 名称 | 与本任务的关系 | 关键结论 |
 | --- | --- | --- | --- |

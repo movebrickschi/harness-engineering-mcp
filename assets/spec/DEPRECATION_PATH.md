@@ -73,7 +73,7 @@ flowchart LR
 
 ### 3.1 灰度期
 
-- 标记 `@deprecated` + 在文档与 `harness.config.json` 提示
+- 标记 `@deprecated` + 在文档与 `.harness/config.json` 提示
 - 工具产出 WARN 而非 FAIL
 - 持续 1 个迭代周期 + 季度复盘前不得移除
 
@@ -103,7 +103,7 @@ flowchart LR
 | 类型 | 用途 | 文件位置 |
 | --- | --- | --- |
 | RFC | 规范变更提案 | `docs/engineering-harness-spec/rfcs/` |
-| ADR | 项目内技术决策 | `docs/adr/` |
+| ADR | 项目内技术决策 | `.harness/adr/` |
 
 RFC accepted 后必须配套写 ADR 记录决策。
 

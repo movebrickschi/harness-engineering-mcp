@@ -47,4 +47,4 @@
 
 ## 7. Reviewer 不直接修代码
 
-如发现问题，描述清楚后退回开发，不要自行修改。详见 `docs/engineering-harness.md` 中“回退路由”章节。
+如发现问题，描述清楚后退回开发，不要自行修改。详见 `.harness/engineering-harness.md` 中“回退路由”章节。

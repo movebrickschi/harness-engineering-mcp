@@ -11,11 +11,11 @@ min_level: L1
 ## 0. 通用准备（任何 mode 都要做）
 
 - [ ] 把 `templates/entry/` 复制到项目根
-- [ ] 重命名 `harness.config.<mode>.json` 为 `harness.config.json`
+- [ ] 重命名 `harness.config.<mode>.json` 为 `.harness/config.json`
 - [ ] 替换 `<PROJECT_NAME>` `<STACK>` 等占位符
 - [ ] 通过 `harness.config.schema.json` 校验
 
-完成判定：`harness.config.json` schema 校验通过。
+完成判定：`.harness/config.json` schema 校验通过。
 
 ---
 
@@ -25,12 +25,12 @@ min_level: L1
 
 - [ ] `README.md`（来自 `templates/entry/README.md.tmpl`）
 - [ ] `CONTRIBUTING.md` 或 `docs/dev-notes.md`
-- [ ] `docs/engineering-harness.md` 项目内 SSOT（精简 200 行）
+- [ ] `.harness/engineering-harness.md` 项目内 SSOT（精简 200 行）
 
 ### 1.2 ADR 与基线
 
-- [ ] `docs/adr/0001-engineering-harness-baseline.md`
-- [ ] `verification_baseline.json`（含首次记录）
+- [ ] `.harness/adr/0001-engineering-harness-baseline.md`
+- [ ] `.harness/baseline.json`（含首次记录）
 
 ### 1.3 本地门禁
 
@@ -68,8 +68,8 @@ min_level: L1
 
 ### 2.4 任务记忆
 
-- [ ] `docs/features/INDEX.md`
-- [ ] `docs/features/_template/`（仅启用 01 / 02 / 05 三个阶段）
+- [ ] `.harness/features/INDEX.md`
+- [ ] `.harness/features/_template/`（仅启用 01 / 02 / 05 三个阶段）
 
 ### 完成判定
 
@@ -113,7 +113,7 @@ min_level: L1
 
 - [ ] CODEOWNERS 启用
 - [ ] On-call 轮值表上线
-- [ ] perf-budget 写入 `verification_baseline.json` 并启用门禁对比
+- [ ] perf-budget 写入 `.harness/baseline.json` 并启用门禁对比
 - [ ] SCA（依赖漏洞扫描）每 PR + 周报上线
 
 ### 完成判定
@@ -155,7 +155,7 @@ min_level: L1
 ## 5. 跨阶段反模式
 
 - 跳级落地（solo 直接套 mid-team）→ 容易疲劳放弃，参考 [`ANTIPATTERNS.md`](ANTIPATTERNS.md)
-- 升档但不改 `harness.config.json` → 工具仍按旧 mode 行为
+- 升档但不改 `.harness/config.json` → 工具仍按旧 mode 行为
 - 把紧急通道当成日常路径 → 触发 [`02-process-and-governance.md`](02-process-and-governance.md) §8 红线
 
 ---
@@ -163,7 +163,7 @@ min_level: L1
 ## 6. 升档零迁移成本
 
 ```
-solo -> small-team:    改 harness.config.json mode + 按 §2 段补 5 文件
+solo -> small-team:    改 .harness/config.json mode + 按 §2 段补 5 文件
 small-team -> mid-team: 改 mode + 按 §3 段补 15 文件
 mid-team -> org:       改 mode + 按 §4 段补全量
 ```

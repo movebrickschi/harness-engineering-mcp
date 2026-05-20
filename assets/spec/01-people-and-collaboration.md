@@ -183,7 +183,7 @@ CODEOWNERS 自动指派，未指派的视为整团队负责。
 ```
 # 示例
 /src/payment/        @alice @bob
-/docs/adr/           @platform-team
+/.harness/adr/       @platform-team
 /.github/            @devops-team
 ```
 

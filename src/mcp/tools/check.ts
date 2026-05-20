@@ -34,7 +34,7 @@ export function registerCheckTool(): ToolDefinition<CheckToolInput, CheckToolOut
   return {
     name: "harness_check",
     description:
-      "Run Engineering Harness checks based on harness.config.json. Cross-platform replacement for engineering-check.ps1/sh. Returns structured PASS/WARN/FAIL summary plus per-check details.",
+      "Run Engineering Harness checks based on .harness/config.json. Cross-platform replacement for .harness/scripts/engineering-check.ps1/sh. Returns structured PASS/WARN/FAIL summary plus per-check details.",
     inputSchema: inputSchema as unknown as Record<string, unknown>,
     handler: async (input) => runChecks(input),
   };

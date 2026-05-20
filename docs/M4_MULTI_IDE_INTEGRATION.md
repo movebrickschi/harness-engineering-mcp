@@ -117,7 +117,7 @@ Codex CLI 风格的输入：
 
 ### 4.2 已知差异
 
-- Codex CLI 的 MCP 实现对**资源 URI** 支持不如 Cursor 完整：spec/skills 索引可读，但模板与 stack-adapter 通常需要工具调用 `harness_load_skill` 间接获取，而不是直接通过 URI 拉取。本仓库已通过 6 个工具兜底了所有资源场景，因此即便 URI 通道有限制也不影响功能。
+- Codex CLI 的 MCP 实现对**资源 URI** 支持不如 Cursor 完整：spec/skills 索引可读，但模板与 stack-adapter 通常需要工具调用 `harness_load_skill` 间接获取，而不是直接通过 URI 拉取。本仓库已通过 7 个工具兜底了所有资源场景，因此即便 URI 通道有限制也不影响功能。
 - `output_format=json` 输出在 Codex CLI 中比 markdown 渲染更稳；建议 CI 场景统一用 `--json`。
 
 ---
@@ -126,7 +126,7 @@ Codex CLI 风格的输入：
 
 | 能力 | Cursor | Claude Code | Codex CLI |
 |---|---|---|---|
-| 6 个工具调用 | ✅ | ✅ | ✅ |
+| 7 个工具调用（含 `harness_uninstall`）| ✅ | ✅ | ✅ |
 | `harness://spec/*` 资源直读 | ✅ | ✅ | ⚠ 部分支持 |
 | `harness://skills/*` 资源直读 | ✅ | ✅ | ⚠ 通过工具替代 |
 | `harness://config/schema` 资源直读 | ✅ | ✅ | ✅ |

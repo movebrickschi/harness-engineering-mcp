@@ -6,8 +6,9 @@ import { registerUpgradeCommand } from "./commands/upgrade.js";
 import { registerListCommand } from "./commands/list.js";
 import { registerMcpCommand } from "./commands/mcp.js";
 import { registerRouteCommand } from "./commands/route.js";
+import { registerUninstallCommand } from "./commands/uninstall.js";
 
-const VERSION = "0.1.0";
+const VERSION = "0.2.0";
 
 export async function runCli(argv: string[] = process.argv): Promise<void> {
   const program = new Command();
@@ -25,6 +26,7 @@ export async function runCli(argv: string[] = process.argv): Promise<void> {
   registerListCommand(program);
   registerMcpCommand(program);
   registerRouteCommand(program);
+  registerUninstallCommand(program);
 
   await program.parseAsync(argv);
 }

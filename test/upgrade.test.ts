@@ -61,12 +61,12 @@ describe("harness_upgrade_mode", () => {
       expect(paths).toContain("CHANGELOG.md");
       expect(paths).toContain(".github/pull_request_template.md");
       expect(paths).toContain(".github/CODEOWNERS");
-      expect(paths).toContain("docs/oncall.md");
-      expect(paths).toContain("docs/SLO.md");
+      expect(paths).toContain(".harness/oncall.md");
+      expect(paths).toContain(".harness/SLO.md");
       expect(readFileSync(join(cwd, ".github/CODEOWNERS"), "utf-8")).toContain(
         "@platform-team",
       );
-      expect(readFileSync(join(cwd, "docs/SLO.md"), "utf-8")).toMatch(/p95/i);
+      expect(readFileSync(join(cwd, ".harness/SLO.md"), "utf-8")).toMatch(/p95/i);
     } finally {
       rmSync(cwd, { recursive: true, force: true });
     }
@@ -80,13 +80,13 @@ describe("harness_upgrade_mode", () => {
       const result = await tool.handler({ cwd, to: "org" }, upgradeCtx(cwd));
 
       const paths = result.generated_files.map((f) => f.path);
-      expect(paths).toContain("docs/DORA.md");
-      expect(paths).toContain("docs/rfc/0000-template.md");
-      expect(paths).toContain("docs/SBOM.md");
-      expect(paths).toContain("compliance/.gitkeep");
+      expect(paths).toContain(".harness/DORA.md");
+      expect(paths).toContain(".harness/rfc/0000-template.md");
+      expect(paths).toContain(".harness/SBOM.md");
+      expect(paths).toContain(".harness/compliance/.gitkeep");
       expect(paths).toContain(".github/CODEOWNERS");
 
-      const dora = readFileSync(join(cwd, "docs/DORA.md"), "utf-8");
+      const dora = readFileSync(join(cwd, ".harness/DORA.md"), "utf-8");
       expect(dora).toMatch(/Deployment frequency/);
       expect(dora).toMatch(/MTTR/);
     } finally {

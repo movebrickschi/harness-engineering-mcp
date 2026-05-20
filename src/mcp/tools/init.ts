@@ -12,6 +12,7 @@ import { scanProject } from "../../core/scanner/index.js";
 import { defaultConfigForMode } from "../../core/config/loader.js";
 import { readAsset } from "../../core/assets.js";
 import { renderTemplate } from "../../core/renderer/handlebars.js";
+import { HARNESS_PATHS, FEATURE_TEMPLATE_FILES } from "../../core/paths.js";
 
 const inputSchema = {
   type: "object",
@@ -38,6 +39,12 @@ const inputSchema = {
       items: { enum: ["gdpr", "pipl", "iso27001", "soc2", "hipaa"] },
     },
     dry_run: { type: "boolean", default: false },
+    force: {
+      type: "boolean",
+      default: false,
+      description:
+        "When true, regenerate every harness file from the bundled template even if the file already exists with custom content. Default false to protect user-edited INDEX.md / ADR / config customizations.",
+    },
   },
   required: ["cwd"],
 } as const;
@@ -98,6 +105,7 @@ export function registerInitTool(): ToolDefinition<InitToolInput, InitToolOutput
         maturity_target: input.maturity_target ?? "L1",
         compliance: input.compliance ?? [],
         dry_run: input.dry_run === true,
+        force: input.force === true,
       });
 
       return {
@@ -107,7 +115,7 @@ export function registerInitTool(): ToolDefinition<InitToolInput, InitToolOutput
         generated_files: generated,
         next_steps: [
           "运行 harness_check 跑首次门禁",
-          "查看 docs/engineering-harness.md 熟悉项目 SSOT",
+          `查看 ${HARNESS_PATHS.ssot} 熟悉项目 SSOT`,
           "如团队规模发生变化可运行 harness_upgrade_mode 升档",
         ],
       };
@@ -124,6 +132,8 @@ async function generateProjectFiles(args: {
   maturity_target: NonNullable<InitToolInput["maturity_target"]>;
   compliance: NonNullable<InitToolInput["compliance"]>;
   dry_run: boolean;
+  /** true 时显式覆盖已有文件；默认 false（保留用户自定义，避免误删任务记忆/ADR） */
+  force: boolean;
 }): Promise<GeneratedFile[]> {
   const config = defaultConfigForMode(args.mode, {
     name: args.project_name,
@@ -146,18 +156,13 @@ async function generateProjectFiles(args: {
     date: new Date().toISOString().slice(0, 10),
   };
 
+  const write = (rel: string, content: string): GeneratedFile =>
+    writeOrPlan(args.cwd, rel, content, args.dry_run, args.force);
+
+  files.push(write(HARNESS_PATHS.config, JSON.stringify(config, null, 2) + "\n"));
   files.push(
-    writeOrPlan(
-      args.cwd,
-      "harness.config.json",
-      JSON.stringify(config, null, 2) + "\n",
-      args.dry_run,
-    ),
-  );
-  files.push(
-    writeOrPlan(
-      args.cwd,
-      "verification_baseline.json",
+    write(
+      HARNESS_PATHS.baseline,
       JSON.stringify(
         {
           version: "1.0",
@@ -171,82 +176,54 @@ async function generateProjectFiles(args: {
         null,
         2,
       ) + "\n",
-      args.dry_run,
     ),
   );
   files.push(
-    writeOrPlan(
-      args.cwd,
-      "engineering-check.ps1",
+    write(
+      HARNESS_PATHS.checkPs1,
       await renderAssetTemplate("templates/entry/engineering-check.ps1.hbs", templateData),
-      args.dry_run,
     ),
   );
   files.push(
-    writeOrPlan(
-      args.cwd,
-      "engineering-check.sh",
+    write(
+      HARNESS_PATHS.checkSh,
       await renderAssetTemplate("templates/entry/engineering-check.sh.hbs", templateData),
-      args.dry_run,
     ),
   );
   files.push(
-    writeOrPlan(
-      args.cwd,
-      "docs/engineering-harness.md",
+    write(
+      HARNESS_PATHS.ssot,
       await renderAssetTemplate("templates/entry/engineering-harness.md.hbs", templateData),
-      args.dry_run,
     ),
   );
   files.push(
-    writeOrPlan(
-      args.cwd,
-      "docs/adr/0001-engineering-harness-baseline.md",
+    write(
+      HARNESS_PATHS.adrBaseline,
       await renderAssetTemplate("templates/adr/0001-engineering-harness-baseline.md.hbs", templateData),
-      args.dry_run,
     ),
   );
-  files.push(
-    writeOrPlan(
-      args.cwd,
-      "docs/features/INDEX.md",
-      renderFeaturesIndex(args),
-      args.dry_run,
-    ),
-  );
+  files.push(write(HARNESS_PATHS.featuresIndex, renderFeaturesIndex(args)));
 
-  for (const rel of [
-    "README.md",
-    "01_REQUIREMENT_ANALYSIS.md",
-    "02_SOLUTION_DESIGN.md",
-    "03_GATE_REVIEW.md",
-    "04_DEVELOPMENT.md",
-    "05_CODE_REVIEW.md",
-    "06_TEST_REPORT.md",
-  ]) {
+  for (const rel of FEATURE_TEMPLATE_FILES) {
     files.push(
-      writeOrPlan(
-        args.cwd,
-        `docs/features/_template/${rel}`,
+      write(
+        `${HARNESS_PATHS.featuresTemplateDir}/${rel}`,
         await readAsset(`templates/features/_template/${rel}`),
-        args.dry_run,
       ),
     );
   }
 
   files.push(
-    writeOrPlan(
-      args.cwd,
+    write(
       ".github/pull_request_template.md",
       await readAsset("templates/pr/pull_request_template.md"),
-      args.dry_run,
     ),
   );
   return files;
 }
 
 function existingBaselineCreatedAt(cwd: string): string | null {
-  const baselinePath = join(cwd, "verification_baseline.json");
+  const baselinePath = join(cwd, HARNESS_PATHS.baseline);
   if (!existsSync(baselinePath)) return null;
   try {
     const baseline = JSON.parse(readFileSync(baselinePath, "utf-8")) as { created_at?: unknown };
@@ -268,6 +245,7 @@ function writeOrPlan(
   rel: string,
   content: string,
   dryRun: boolean,
+  force = false,
 ): GeneratedFile {
   const abs = join(cwd, rel);
   const bytes = Buffer.byteLength(content, "utf-8");
@@ -278,6 +256,10 @@ function writeOrPlan(
     const current = readFileSync(abs, "utf-8");
     if (current === content) {
       return { path: rel, action: "skipped", bytes, reason: "unchanged" };
+    }
+    if (!force) {
+      // 默认安全行为：保留用户自定义内容，避免误删 INDEX.md 里的任务条目、自写 ADR 等
+      return { path: rel, action: "skipped", bytes, reason: "kept_existing" };
     }
     mkdirSync(dirname(abs), { recursive: true });
     writeFileSync(abs, content, "utf-8");
@@ -291,7 +273,7 @@ function writeOrPlan(
 function renderFeaturesIndex(args: { project_name: string }): string {
   return `# Features Index · ${args.project_name}
 
-> 项目任务看板（按时间倒序）。每条任务对应 \`docs/features/<feature>/\` 子目录。
+> 项目任务看板（按时间倒序）。每条任务对应 \`.harness/features/<feature>/\` 子目录。
 
 | 时间 | Feature | 类型 | 状态 | 负责人 | 路径 |
 |---|---|---|---|---|---|

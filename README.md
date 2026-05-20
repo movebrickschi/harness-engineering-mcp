@@ -4,9 +4,9 @@
 
 `harness-engineering-mcp` 把一套**工程治理基线**（项目骨架 + 文档 + 门禁脚本 + 任务路由 + Gate Review + 升档剧本）包成一个可被任何 AI IDE 共用的 MCP server。
 
-- **6 个 MCP 工具**：`harness_init` · `harness_check` · `harness_route_task` · `harness_load_skill` · `harness_gate_review` · `harness_upgrade_mode`
+- **7 个 MCP 工具**：`harness_init` · `harness_check` · `harness_route_task` · `harness_load_skill` · `harness_gate_review` · `harness_upgrade_mode` · `harness_uninstall`
 - **4 类 MCP 资源**：`harness://spec/*` · `harness://skills/*` · `harness://rules/*` · `harness://templates/*`（外加 `harness://config/schema` 与 `harness://stack-adapters/*`）
-- **跨平台 CLI**：`harness init` · `harness check` · `harness route` · `harness upgrade` · `harness list` · `harness mcp`
+- **跨平台 CLI**：`harness init` · `harness check` · `harness route` · `harness upgrade` · `harness list` · `harness mcp` · `harness uninstall`
 - 一份配置即可同时挂载到 **Cursor / Claude Code / Codex CLI** 三家 IDE
 
 ---
@@ -19,7 +19,7 @@
 4. [MCP 工具详解](#4-mcp-工具详解)
 5. [MCP 资源详解](#5-mcp-资源详解)
 6. [CLI 命令参考](#6-cli-命令参考)
-7. [`harness.config.json` 配置](#7-harnessconfigjson-配置)
+7. [`.harness/config.json` 配置](#7-harnessconfigjson-配置)
 8. [IDE 接入](#8-ide-接入)
 9. [常见场景](#9-常见场景)
 10. [AI 高效执行 & 省 Token](#10-ai-高效执行--省-token)
@@ -42,40 +42,169 @@ npx harness-engineering-mcp init
 
 | 二进制 | 作用 |
 |---|---|
-| `harness` | CLI 主入口（init/check/route/upgrade/list/mcp）|
+| `harness` | CLI 主入口（init/check/route/upgrade/list/mcp/uninstall）|
 | `harness-mcp` | 启动 MCP server（IDE 自动调起，一般无需手工运行）|
 
 > Node 版本要求：`>= 20`。
 
 ---
 
-## 2. 5 分钟上手
+## 2. 5 分钟上手（复制粘贴即跑通）
+
+下面这一整段 **从空仓库到 harness 全绿** 一气呵成。每条命令下方用 `↳` 标的是预期输出片段——能对上就是装对了。
+
+### Step 1 · 准备一个空 demo 项目
 
 ```bash
-# 1. 在任意项目根目录下初始化
-cd my-project
-harness init --mode=solo --stack=node-typescript --type=library --name=my-project
-
-# 2. 跑首次门禁
-harness check
-# Harness Check: WARN
-# PASS 7 · WARN 4 · FAIL 0 · 142ms
-# ...
-
-# 3. 给一句话需求做路由
-harness route "列表加一个状态筛选"
-# 推荐 skill: dev-flow-oneliner-fe
-# modifiers: [M2]
-
-# 4. （可选）加上真实测试执行
-harness check --run-tests
-# tests.exec PASS · 末尾: ... Tests 21 passed (21)
+mkdir hello-harness && cd hello-harness
+git init
+npm init -y
+npm pkg set scripts.test='node -e "process.exit(0)"'
+mkdir test && echo "// placeholder" > test/sanity.test.js
+echo "node_modules/" > .gitignore
+echo ".env" >> .gitignore
+echo "dist/" >> .gitignore
 ```
 
-完整端到端只需要 **4 条命令**。
+预期：当前目录下有 `package.json` + `test/sanity.test.js` + `.gitignore`。
+
+### Step 2 · 接入 Harness（生成 `.harness/` 所有产物）
+
+```bash
+harness init --mode=solo --stack=node-typescript --type=library --name=hello-harness
+```
+
+预期输出 ↳
+
+```
+harness_init: completed
+- created .harness/config.json (1234 bytes)
+- created .harness/baseline.json (412 bytes)
+- created .harness/scripts/engineering-check.ps1 (123 bytes)
+- created .harness/scripts/engineering-check.sh (98 bytes)
+- created .harness/engineering-harness.md (567 bytes)
+- created .harness/adr/0001-engineering-harness-baseline.md (...)
+- created .harness/features/INDEX.md (...)
+- created .harness/features/_template/01_REQUIREMENT_ANALYSIS.md (...)
+  ... 7 个阶段模板 ...
+- created .github/pull_request_template.md (...)
+Next steps:
+- 运行 harness_check 跑首次门禁
+- 查看 .harness/engineering-harness.md 熟悉项目 SSOT
+- 如团队规模发生变化可运行 harness_upgrade_mode 升档
+```
+
+文件树这时候是：
+
+```
+hello-harness/
+├── .harness/
+│   ├── config.json
+│   ├── baseline.json
+│   ├── engineering-harness.md         ← 项目 SSOT
+│   ├── adr/0001-engineering-harness-baseline.md
+│   ├── features/INDEX.md + _template/
+│   └── scripts/engineering-check.{ps1,sh}
+├── .github/pull_request_template.md
+├── .gitignore
+├── package.json
+└── test/sanity.test.js
+```
+
+### Step 3 · 跑首次门禁
+
+```bash
+harness check
+```
+
+预期输出 ↳
+
+```
+Harness Check: PASS
+PASS 13 · WARN 1 · FAIL 0 · 178ms
+
+  ✓ config.exists          .harness/config.json 存在
+  ✓ config.valid           mode=solo stack=node-typescript
+  ✓ structure.ssot         SSOT .harness/engineering-harness.md 存在
+  ⚠ structure.adr          .harness/adr/ 下 1 条 ADR（baseline）
+  ✓ structure.features     features 任务看板存在
+  ✓ secrets.envfile        未在仓库中发现 .env 文件
+  ✓ secrets.gitignore      .gitignore 包含关键排除项
+  ✓ tests.directory        测试目录 test 存在
+  ✓ tests.command          npm test 已配置
+  ✓ baseline.exists        .harness/baseline.json 存在
+  ✓ baseline.valid         baseline version=1.0
+  ✓ docs.readme            README.md 存在
+  ✓ quality.coverage       未设置覆盖率基线，跳过
+  ✓ quality.pr_size        变更 0 行 / 0 文件，在限制内
+```
+
+（README.md 没生成所以 `docs.readme` 会 WARN？实际是 `npm init -y` 默认不生成 README——如果你的 npm 版本生成了就是 PASS。WARN 也算上线。）
+
+### Step 4 · 路由一句话需求
+
+```bash
+harness route "用户列表加一个按状态筛选的下拉框"
+```
+
+预期输出 ↳
+
+```
+[route] task = "用户列表加一个按状态筛选的下拉框"
+skill: dev-flow-oneliner-fe
+skill_uri: harness://skills/dev-flow-oneliner-fe
+weight: 一句话需求
+modifiers: [M2]
+forced_upgrade: null
+suggested_next_tools: [harness_load_skill, harness_check]
+efficiency_hints:
+  - 「列表 / 筛选」识别为 UI 范畴，可直接用 dev-flow-oneliner-fe 切片实现
+  - 提交前必跑 harness check --strict
+  - skill / spec 走 harness:// URI 引用，不要复制粘贴到 prompt 里
+  - 短回复 + 表格优于散文
+```
+
+### Step 5 · 强制升档检测（可选验证）
+
+```bash
+harness route "后端加张订单表"
+```
+
+预期输出 ↳
+
+```
+skill: dev-flow-oneliner-be
+modifiers: [M4]
+forced_upgrade:
+  to: dev-flow-doc-be
+  reason: 涉及数据库 schema 变更，须走完整 PRD + 迁移脚本 + 回滚 SQL 流程
+```
+
+→ "加张表" 命中 M4 modifier，**自动从轻量 oneliner 升级到 doc-be 完整流程**，这是 harness 防止"周五顺手加表周一线上回不来"的核心机制。
+
+### Step 6 · （可选）真实跑测试 + commit
+
+```bash
+harness check --strict --run-tests
+git add -A && git commit -m "chore: harness baseline"
+```
+
+预期输出 ↳
+
+```
+Harness Check: PASS
+PASS 14 · WARN 0 · FAIL 0 · 1240ms
+  ✓ tests.exec             npm test 成功 (exit=0)
+
+[main (root-commit) abc1234] chore: harness baseline
+ N files changed, ... insertions(+)
+```
+
+✅ **5 分钟全跑通 = harness 装好可用**。
 
 > - 完整真实场景（新项目接入 / AI 路由 / DB 升级触发 / 团队升档 / CI 集成）→ [`docs/USAGE.md`](docs/USAGE.md)
-> - **MCP 装好后日常怎么用**（自然语言对话模板 / 开场白 / 6 工具不需记忆映射 / 资源 URI 速查）→ [`docs/IDE_DAILY_USAGE.md`](docs/IDE_DAILY_USAGE.md)
+> - **MCP 装好后日常怎么用**（自然语言对话模板 / 开场白 / 7 工具不需记忆映射 / 资源 URI 速查）→ [`docs/IDE_DAILY_USAGE.md`](docs/IDE_DAILY_USAGE.md)
+> - **不再想用 harness 了怎么完整清除** → `harness uninstall --dry-run` 预览，再 `harness uninstall` 执行。`CHANGELOG.md` 和 `.github/*` 因外部约定保留
 
 ---
 
@@ -141,6 +270,7 @@ modifiers 与 `forced_upgrade.reason` 一起，决定推荐 skill（`dev-flow-on
 | `maturity_target` | `L1..L4` | | 默认 `L1` |
 | `compliance` | `gdpr/pipl/iso27001/soc2/hipaa[]` | | |
 | `dry_run` | boolean | | 仅预览不写盘 |
+| `force` | boolean | | 默认 false。设 true 时强制按模板重新生成已存在文件（**会覆盖你手写的 INDEX.md / ADR / config 自定义内容**）|
 
 **输出**
 
@@ -150,7 +280,7 @@ modifiers 与 `forced_upgrade.reason` 一起，决定推荐 skill（`dev-flow-on
   "detected": { "stack": "...", "project_type": "...", "evidence": [...] },
   "ask_user": [],                    // status=needs_input 时告诉 AI 还要问什么
   "generated_files": [
-    { "path": "harness.config.json", "action": "created", "bytes": 1024 }
+    { "path": ".harness/config.json", "action": "created", "bytes": 1024 }
   ],
   "next_steps": ["运行 harness check 校验首次门禁"]
 }
@@ -162,7 +292,7 @@ modifiers 与 `forced_upgrade.reason` 一起，决定推荐 skill（`dev-flow-on
 harness init --mode=small-team --stack=java-spring --type=backend-service --name=order-api
 ```
 
-生成 6 个核心文件：`harness.config.json` · `docs/engineering-harness.md` · `scripts/engineering-check.{ps1,sh}` · `docs/adr/0001-engineering-harness-baseline.md` · `verification_baseline.json` · `docs/features/INDEX.md`。
+生成 6 个核心文件：`.harness/config.json` · `.harness/engineering-harness.md` · `.harness/scripts/engineering-check.{ps1,sh}` · `.harness/adr/0001-engineering-harness-baseline.md` · `.harness/baseline.json` · `.harness/features/INDEX.md`。
 
 ---
 
@@ -188,7 +318,7 @@ harness init --mode=small-team --stack=java-spring --type=backend-service --name
   "category": "config",
   "check_id": "config.exists",
   "status": "PASS",            // PASS | WARN | FAIL
-  "message": "harness.config.json 存在",
+  "message": ".harness/config.json 存在",
   "suggestion": "...",         // 可选
   "file": "...", "line": 12    // 可选
 }
@@ -271,14 +401,14 @@ node dist/cli.js mcp           # 启动 MCP 由 IDE 调用 harness_load_skill
 
 ### 4.5 `harness_gate_review` · 闸门评审
 
-生成或检查 `docs/features/<name>/03_GATE_REVIEW.md`。
+生成或检查 `.harness/features/<name>/03_GATE_REVIEW.md`。
 
 **输入**
 
 | 字段 | 类型 | 必填 | 说明 |
 |---|---|---|---|
 | `cwd` | string | ✅ | |
-| `feature_name` | string | ✅ | 在 `docs/features/<name>/` 下落盘 |
+| `feature_name` | string | ✅ | 在 `.harness/features/<name>/` 下落盘 |
 | `action` | `generate/check` | | 默认 `generate` |
 
 **输出**
@@ -286,7 +416,7 @@ node dist/cli.js mcp           # 启动 MCP 由 IDE 调用 harness_load_skill
 ```jsonc
 {
   "status": "generated" | "passed" | "blocked",
-  "file_path": "docs/features/search-v2/03_GATE_REVIEW.md",
+  "file_path": ".harness/features/search-v2/03_GATE_REVIEW.md",
   "blockers": ["缺少回滚 SQL", "鉴权策略缺失"]
 }
 ```
@@ -308,7 +438,34 @@ harness_gate_review cwd=$(pwd) feature_name=search-v2 action=check
 
 ---
 
-### 4.6 `harness_upgrade_mode` · 模式升档
+### 4.6 `harness_uninstall` · 清除 Harness 产物
+
+从项目里清除 Engineering Harness 全部产物（递归删除 `.harness/` 目录）。
+
+**输入**
+
+| 字段 | 类型 | 必填 | 说明 |
+|---|---|---|---|
+| `cwd` | string | ✅ | 项目绝对路径 |
+| `dry_run` | boolean | | 仅列出将删除的文件，不动盘 |
+| `keep_root_dir` | boolean | | 清空 `.harness/` 内部但保留目录本身 |
+
+**输出**
+
+```jsonc
+{
+  "status": "completed" | "dry_run" | "not_found",
+  "removed": [".harness/config.json", ".harness/features/INDEX.md", ...],
+  "kept": ["CHANGELOG.md", ".github/CODEOWNERS"],
+  "next_steps": ["..."]
+}
+```
+
+`kept` 列出因外部工具约定（npm/GitHub）保留的 harness 相关文件，需要手工删除。
+
+---
+
+### 4.7 `harness_upgrade_mode` · 模式升档
 
 零成本从 `solo → small-team → mid-team → org` 累积升档。
 
@@ -317,8 +474,8 @@ harness_gate_review cwd=$(pwd) feature_name=search-v2 action=check
 | 目标 mode | 新增文件 |
 |---|---|
 | `small-team` | `CHANGELOG.md` · `.github/pull_request_template.md`（init 已建则跳过）|
-| `mid-team` | `.github/CODEOWNERS` · `docs/oncall.md` · `docs/SLO.md` |
-| `org` | `docs/DORA.md` · `docs/rfc/0000-template.md` · `docs/SBOM.md` · `compliance/.gitkeep` |
+| `mid-team` | `.github/CODEOWNERS` · `.harness/oncall.md` · `.harness/SLO.md` |
+| `org` | `.harness/DORA.md` · `.harness/rfc/0000-template.md` · `.harness/SBOM.md` · `.harness/compliance/.gitkeep` |
 
 > 已存在的文件**保留原内容**并在 `generated_files[].action` 中标记为 `skipped`，永不覆盖。
 
@@ -346,7 +503,7 @@ harness upgrade --to=mid-team
 | `harness://rules/<filename>` | 单条规则 markdown |
 | `harness://templates/index` | 模板清单 |
 | `harness://templates/<path>` | 单模板文件正文 |
-| `harness://config/schema` | `harness.config.json` 的 JSON Schema |
+| `harness://config/schema` | `.harness/config.json` 的 JSON Schema |
 | `harness://stack-adapters/<stack>` | 单个 stack 适配指南（java-spring / node-typescript / python）|
 
 ---
@@ -363,6 +520,9 @@ harness upgrade --to=mid-team
 | `--type <type>` | `backend-service/library/cli/frontend-spa` |
 | `--name <name>` | 项目名 |
 | `--dry-run` | 仅打印，不写盘 |
+| `--force` | 强制按模板重新生成所有 harness 文件（覆盖已有自定义内容；不指定时默认安全保留）|
+
+> ⚠️ `--force` 会覆盖 `.harness/features/INDEX.md` 等可能含用户填入任务的文件。重新生成前务必 git commit 一次。
 
 ### `harness check [...]`
 
@@ -388,7 +548,7 @@ harness upgrade --to=mid-team
 
 | flag | 说明 |
 |---|---|
-| `--from <mode>` | 起点 mode，不填则从 `harness.config.json` 读取 |
+| `--from <mode>` | 起点 mode，不填则从 `.harness/config.json` 读取 |
 | `--to <mode>` | 目标 mode（**必填**）|
 
 ### `harness list <category>`
@@ -403,9 +563,29 @@ harness upgrade --to=mid-team
 
 启动 MCP server（stdio）。IDE 自动调起，一般无需手工运行。
 
+### `harness uninstall [...]`
+
+从项目里清除 Engineering Harness 全部产物（递归删除 `.harness/` 目录）。`CHANGELOG.md` 和 `.github/*` 因外部工具约定保留不动。
+
+| flag | 说明 |
+|---|---|
+| `-C, --cwd <path>` | 项目根 |
+| `--dry-run` | 仅列出将被删除的文件，不实际删除 |
+| `--keep-root-dir` | 清空 `.harness/` 内部内容但保留目录本身（便于 git 追踪） |
+| `-y, --yes` | 跳过交互式确认（CI / 脚本场景使用） |
+
+示例：
+
+```bash
+harness uninstall --dry-run             # 先看要删什么
+harness uninstall                       # 交互确认后删除
+harness uninstall -y                    # 一键删除，不确认（脚本里用）
+harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
+```
+
 ---
 
-## 7. `harness.config.json` 配置
+## 7. `.harness/config.json` 配置
 
 完整 JSON Schema 见：
 
@@ -499,7 +679,7 @@ AI / IDE 内部链路：
 ```text
 1. harness_route_task task="..." → 拿到 skill + modifiers + forced_upgrade
 2. harness_load_skill name=<skill> → 读 SKILL.md
-3. 按 SKILL.md 流程产出 docs/features/<name>/01_..06_*.md
+3. 按 SKILL.md 流程产出 .harness/features/<name>/01_..06_*.md
 4. harness_gate_review action=check feature_name=<name> → 出 blocker
 5. harness_check --run-tests → 最终绿灯后再提交
 ```
@@ -581,7 +761,7 @@ harness://rules/16-ai-efficiency.mdc
 | 层 | 内容 | 加载方式 |
 |---|---|---|
 | L0 · System / Spec | Harness spec / rules 全集 | MCP 资源 URI 一次挂载，永不抄进 prompt |
-| L1 · Project | `harness.config.json` + SSOT + baseline | MCP 工具按需读，跨任务复用 |
+| L1 · Project | `.harness/config.json` + SSOT + baseline | MCP 工具按需读，跨任务复用 |
 | L2 · Task | 当前 feature 的 01-06 文档 + 本轮文件 + 本轮日志 | 一次性，结束即丢 |
 
 让 L0 / L1 在 prompt cache 中常驻，每轮只让 L2 承担新增 token → cache 命中率 ≥ 60% 是合理基线。
@@ -597,7 +777,7 @@ harness://rules/16-ai-efficiency.mdc
 | Prompt cache 命中率 | ≥ 60% |
 | Subagent 委派率（> 3 文件检索）| ≥ 80% |
 
-mid-team+ 项目建议把这些指标接进 `docs/DORA.md` 旁的「AI Efficiency Board」每月跟进。
+mid-team+ 项目建议把这些指标接进 `.harness/DORA.md` 旁的「AI Efficiency Board」每月跟进。
 
 ---
 
@@ -659,7 +839,9 @@ git tag v0.1.0 && git push origin v0.1.0
 | 文档 | 用途 |
 |---|---|
 | [`docs/USAGE.md`](docs/USAGE.md) | **新手必读** · 5 个端到端场景走通（新项目接入 / AI 路由 / 强制升级 / 团队升档 / CI 集成）|
-| [`docs/IDE_DAILY_USAGE.md`](docs/IDE_DAILY_USAGE.md) | **MCP 装好后每天怎么用** · 自然语言对话模板 · 开场白 · 6 工具不需记忆映射 · 资源 URI 速查 · 故障排查 |
+| [`docs/IDE_DAILY_USAGE.md`](docs/IDE_DAILY_USAGE.md) | **MCP 装好后每天怎么用** · 自然语言对话模板 · 开场白 · 7 工具不需记忆映射 · 资源 URI 速查 · 故障排查 |
+| [`docs/COMPARISON.md`](docs/COMPARISON.md) | **vs Cursor rules / Claude memories / Aider** 等同类工具对比 · 共存方案 · 决策树 |
+| [`docs/EXECUTION_FLOW.md`](docs/EXECUTION_FLOW.md) | **9 个 mermaid 流程时序图** · 涵盖全部 7 个 MCP 工具 + Modifier 检测 + 端到端链路 |
 | [`docs/PROPOSAL.md`](docs/PROPOSAL.md) | v0.1 设计草案（API 契约 / 时序图 / 4 周 milestone）|
 | [`docs/M2_PS1_COMPATIBILITY.md`](docs/M2_PS1_COMPATIBILITY.md) | 与原 `engineering-check.ps1` 的等价对照表 + CI 迁移指南 |
 | [`docs/M3_CURSOR_INTEGRATION.md`](docs/M3_CURSOR_INTEGRATION.md) | Cursor MCP 接入步骤 + URI 测试清单 |

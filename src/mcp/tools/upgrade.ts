@@ -8,6 +8,7 @@ import type {
 } from "../../types/harness.js";
 import type { ToolDefinition } from "../../types/mcp.js";
 import { defaultConfigForMode, loadHarnessConfig } from "../../core/config/loader.js";
+import { HARNESS_PATHS } from "../../core/paths.js";
 
 const inputSchema = {
   type: "object",
@@ -28,7 +29,7 @@ export function registerUpgradeTool(): ToolDefinition<
   return {
     name: "harness_upgrade_mode",
     description:
-      "Upgrade harness mode (solo → small-team → mid-team → org) with zero migration cost. Updates harness.config.json and generates additional files required by the new mode.",
+      "Upgrade harness mode (solo → small-team → mid-team → org) with zero migration cost. Updates .harness/config.json and generates additional files required by the new mode under .harness/.",
     inputSchema: inputSchema as unknown as Record<string, unknown>,
     handler: async (input) => {
       const current = loadHarnessConfig(input.cwd);
@@ -48,11 +49,12 @@ export function registerUpgradeTool(): ToolDefinition<
       const newConfig = defaultConfigForMode(to, { ...baseProject, mode: to });
       const generated: GeneratedFile[] = [];
 
-      const cfgPath = join(input.cwd, "harness.config.json");
+      const cfgPath = join(input.cwd, HARNESS_PATHS.config);
       const cfgContent = JSON.stringify(newConfig, null, 2) + "\n";
+      mkdirSync(dirname(cfgPath), { recursive: true });
       writeFileSync(cfgPath, cfgContent, "utf-8");
       generated.push({
-        path: "harness.config.json",
+        path: HARNESS_PATHS.config,
         action: "updated",
         bytes: Buffer.byteLength(cfgContent, "utf-8"),
       });
@@ -122,36 +124,36 @@ function incrementsForTier(tier: HarnessMode, projectName: string): IncrementFil
       return [
         {
           path: ".github/CODEOWNERS",
-          body: `# CODEOWNERS for ${projectName}\n# 形如 \`path  @owner\`，行级覆盖。\n*       @platform-team\n/docs/  @docs-team\n`,
+          body: `# CODEOWNERS for ${projectName}\n# 形如 \`path  @owner\`，行级覆盖。\n*       @platform-team\n/${HARNESS_PATHS.featuresDir.split("/")[0]}/  @platform-team\n`,
         },
         {
-          path: "docs/oncall.md",
+          path: HARNESS_PATHS.oncall,
           body: `# On-call 轮值\n\n| 周次 | 主班 | 副班 | 备注 |\n|---|---|---|---|\n| W${currentIsoWeek()} |  |  | 升档自动生成 |\n`,
         },
         {
-          path: "docs/SLO.md",
+          path: HARNESS_PATHS.slo,
           body: `# Service Level Objectives · ${projectName}\n\n| 指标 | SLO 目标 | 错误预算 | 测量来源 |\n|---|---|---|---|\n| 可用率 | 99.5% | 0.5% | uptime monitor |\n| p95 延迟 | 200ms | — | tracing |\n`,
         },
       ];
     case "org":
       return [
         {
-          path: "docs/DORA.md",
+          path: HARNESS_PATHS.dora,
           body:
             "# DORA Metrics\n\n- Deployment frequency: weekly\n- Lead time for changes: < 1 day\n- Change failure rate: < 15%\n- MTTR: < 1 hour\n\n收集来源：CI/CD pipeline + incident tracker。\n",
         },
         {
-          path: "docs/rfc/0000-template.md",
+          path: HARNESS_PATHS.rfcTemplate,
           body:
             "# RFC-XXXX: Title\n\n- Status: Draft\n- Author:\n- Reviewer:\n- Date:\n\n## Context\n\n## Proposal\n\n## Alternatives\n\n## Decision\n\n## Consequences\n",
         },
         {
-          path: "docs/SBOM.md",
+          path: HARNESS_PATHS.sbom,
           body:
             "# Software Bill of Materials\n\n生成方式（任选其一）：\n\n- `npx @cyclonedx/cyclonedx-npm --output-file sbom.json`\n- `syft packages dir:. -o cyclonedx-json > sbom.json`\n\n建议在 release pipeline 中自动生成并归档到 release artifact。\n",
         },
         {
-          path: "compliance/.gitkeep",
+          path: HARNESS_PATHS.complianceKeep,
           body: "",
         },
       ];

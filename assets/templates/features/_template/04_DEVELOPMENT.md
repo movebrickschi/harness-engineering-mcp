@@ -50,5 +50,5 @@
 ## 7. 提交前文档同步
 
 - [ ] 模块文档（`apps/api/docs/*.md`）已更新
-- [ ] `docs/features/INDEX.md` 状态已更新
+- [ ] `.harness/features/INDEX.md` 状态已更新
 - [ ] 必要的 ADR 已撰写

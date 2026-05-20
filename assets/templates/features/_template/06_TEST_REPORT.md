@@ -34,7 +34,7 @@ JaCoCo 覆盖率：
 - 行覆盖：%
 - 分支覆盖：%
 
-与 `verification_baseline.json` 对比：是否倒退？
+与 `.harness/baseline.json` 对比：是否倒退？
 
 ## 4. 缺陷记录
 

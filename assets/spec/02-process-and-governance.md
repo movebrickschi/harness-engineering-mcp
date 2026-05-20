@@ -107,7 +107,7 @@ flowchart TD
 ### 3.2 文件位置
 
 ```
-docs/adr/
+.harness/adr/
 ├── README.md                   ADR 总说明
 ├── 0000-template.md            模板
 └── NNNN-<kebab-case-title>.md  实际 ADR，编号递增
@@ -139,7 +139,7 @@ solo 模式下 ADR 仍需写，但不强制 Reviewer 签字；自己拍板即可
 ### 4.2 输入与输出
 
 - **输入**：需求分析、方案设计、API/DB 契约、影响分析
-- **输出**：`docs/features/<feature>/03_GATE_REVIEW.md`，结论 = `通过` / `有条件通过` / `不通过`
+- **输出**：`.harness/features/<feature>/03_GATE_REVIEW.md`，结论 = `通过` / `有条件通过` / `不通过`
 - **规则**：阻塞项不解决不进入开发
 
 ### 4.3 评审清单
@@ -233,9 +233,9 @@ INDEX 标记 `hotfix-followup`。
 
 参考 [`06-knowledge-and-memory.md`](06-knowledge-and-memory.md)。简述：
 
-- `docs/features/INDEX.md` 项目级看板
-- `docs/features/<feature>/01..06.md` 阶段文档（按 T 档启用对应数量）
-- `docs/features/_template/` 给空白模板
+- `.harness/features/INDEX.md` 项目级看板
+- `.harness/features/<feature>/01..06.md` 阶段文档（按 T 档启用对应数量）
+- `.harness/features/_template/` 给空白模板
 
 ---
 

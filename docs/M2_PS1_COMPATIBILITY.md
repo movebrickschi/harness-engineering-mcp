@@ -10,16 +10,16 @@
 
 | ps1 check 名称（推断）| harness_check `check_id` | category | 等价说明 |
 |---|---|---|---|
-| Config exists | `config.exists` | config | 检测 `harness.config.json` |
+| Config exists | `config.exists` | config | 检测 `.harness/config.json` |
 | Config valid | `config.valid` | config | 解析 mode/stack 字段 |
-| SSOT exists | `structure.ssot` | structure | `docs/engineering-harness.md` |
-| ADR present | `structure.adr` | structure | `docs/adr/` 至少一条 |
-| Features board | `structure.features` | structure | `docs/features/INDEX.md` |
+| SSOT exists | `structure.ssot` | structure | `.harness/engineering-harness.md` |
+| ADR present | `structure.adr` | structure | `.harness/adr/` 至少一条 |
+| Features board | `structure.features` | structure | `.harness/features/INDEX.md` |
 | No .env in repo | `secrets.envfile` | secrets | walk repo 找泄漏的 .env |
 | Test directory | `tests.directory` | tests | `test/` / `tests/` / `src/test/` |
 | Test command | `tests.command` | tests | 按 stack 判断 npm/mvn/pytest 是否就绪 |
 | Real test run | `tests.exec` | tests | **新增** · 实际跑 mvn/npm/pytest，PASS=exit 0 |
-| Baseline exists | `baseline.exists` | baseline | `verification_baseline.json` |
+| Baseline exists | `baseline.exists` | baseline | `.harness/baseline.json` |
 | Baseline valid | `baseline.valid` | baseline | JSON 解析 + version 校验 |
 | README exists | `docs.readme` | docs | `README.md` |
 
@@ -31,7 +31,7 @@ ps1 输出每行形如：
 
 ```
 PASS Config exists
-WARN ADR present  -- docs/adr/ 下尚无 ADR 记录
+WARN ADR present  -- .harness/adr/ 下尚无 ADR 记录
 FAIL Config valid -- config.project.mode 缺失
 ```
 
@@ -40,8 +40,8 @@ harness_check 跨平台版输出（CLI summary 模式）形如：
 ```
 Harness Check: WARN
 PASS 7 · WARN 4 · FAIL 0 · 142ms
-PASS config.exists: harness.config.json 存在
-WARN structure.adr: docs/adr/ 下尚无 ADR 记录
+PASS config.exists: .harness/config.json 存在
+WARN structure.adr: .harness/adr/ 下尚无 ADR 记录
 ...
 ```
 

@@ -39,15 +39,15 @@ harness init --mode=solo --stack=node-typescript --type=backend-service --name=o
 
 ```
 order-api/
-├── harness.config.json
-├── verification_baseline.json
-├── docs/
-│   ├── engineering-harness.md       # SSOT
+├── .harness/
+│   ├── config.json
+│   ├── baseline.json
+│   ├── engineering-harness.md             # SSOT
 │   ├── adr/0001-engineering-harness-baseline.md
-│   └── features/INDEX.md
-├── scripts/
-│   ├── engineering-check.ps1
-│   └── engineering-check.sh
+│   ├── features/INDEX.md
+│   └── scripts/
+│       ├── engineering-check.ps1
+│       └── engineering-check.sh
 └── .github/pull_request_template.md
 ```
 
@@ -57,7 +57,7 @@ order-api/
 harness check
 ```
 
-预期：`PASS 7 · WARN 4 · FAIL 0`，整体 `WARN`（因为目前 `docs/features/INDEX.md` 之类还是模板态）。
+预期：`PASS 7 · WARN 4 · FAIL 0`，整体 `WARN`（因为目前 `.harness/features/INDEX.md` 之类还是模板态）。
 
 ### 1.3 真实测试
 
@@ -78,8 +78,8 @@ harness check --run-tests
 
 随着你陆续：
 
-- 写 `docs/adr/0002-...md` → `structure.adr` 转 PASS
-- 在 `docs/features/<name>/` 下用 Gate Review → `structure.features` 转 PASS
+- 写 `.harness/adr/0002-...md` → `structure.adr` 转 PASS
+- 在 `.harness/features/<name>/` 下用 Gate Review → `structure.features` 转 PASS
 - 提交真实的 README → `docs.readme` 转 PASS
 
 整体状态会逐步从 `WARN` 收敛到 `PASS`。
@@ -149,7 +149,7 @@ harness_gate_review {
 }
 ```
 
-→ 在 `docs/features/status-filter/03_GATE_REVIEW.md` 生成 8 维度评审表。
+→ 在 `.harness/features/status-filter/03_GATE_REVIEW.md` 生成 8 维度评审表。
 
 人工 / AI 填表后再：
 
@@ -222,7 +222,7 @@ harness upgrade --to=small-team
 - `CHANGELOG.md`
 - `.github/pull_request_template.md`
 
-`harness.config.json` 自动开启 `release.changelog` / `release.semver` / `process.gate_review_enabled`。
+`.harness/config.json` 自动开启 `release.changelog` / `release.semver` / `process.gate_review_enabled`。
 
 ### 4.2 small-team → mid-team
 
@@ -233,8 +233,8 @@ harness upgrade --to=mid-team
 新增：
 
 - `.github/CODEOWNERS`
-- `docs/oncall.md`
-- `docs/SLO.md`
+- `.harness/oncall.md`
+- `.harness/SLO.md`
 
 modules 中开启 `people.codeowners_enabled` / `people.oncall_enabled` / `quality.coverage_hard_gate` / `security.sca_on_pr` 等。
 
@@ -246,10 +246,10 @@ harness upgrade --to=org
 
 新增：
 
-- `docs/DORA.md`（部署频率 / lead time / 变更失败率 / MTTR）
-- `docs/rfc/0000-template.md`
-- `docs/SBOM.md`
-- `compliance/.gitkeep`
+- `.harness/DORA.md`（部署频率 / lead time / 变更失败率 / MTTR）
+- `.harness/rfc/0000-template.md`
+- `.harness/SBOM.md`
+- `.harness/compliance/.gitkeep`
 
 modules 中开启 `release.feature_flags` / `release.slo_enabled` / `security.sbom_required` / `security.audit_log_required` / `knowledge.post_mortem_required` 等。
 
@@ -336,7 +336,7 @@ harness init --dry-run --mode=solo --stack=other --type=library --name=demo
 
 ### Q2. `tests.exec WARN: 无法为 stack=other 推断可执行的测试命令`
 
-`stack=other` 时不会主动启动测试命令。把 `harness.config.json` 里 `project.stack` 改成具体的栈即可。
+`stack=other` 时不会主动启动测试命令。把 `.harness/config.json` 里 `project.stack` 改成具体的栈即可。
 
 ### Q3. Cursor 中调 `harness_init` 时返回 `status: needs_input`？
 
@@ -350,11 +350,36 @@ harness check --categories=tests,secrets --run-tests
 
 ### Q5. `harness upgrade` 误升档怎么办？
 
-升档**没有自动降档**。但所有增量文件可以手工删除，然后把 `harness.config.json` 里 `project.mode` 改回原值再跑一次 `harness check`。下次升档时缺失的文件还会自动补齐。
+升档**没有自动降档**。但所有增量文件可以手工删除，然后把 `.harness/config.json` 里 `project.mode` 改回原值再跑一次 `harness check`。下次升档时缺失的文件还会自动补齐。
 
 ### Q6. 工具升级后已生成文件不会回滚？
 
 是。`harness upgrade` 永远只做**累积新增**，不破坏已有内容。如果想改 mode 增量模板，更新 `assets/templates/...` 后下次新项目 init 会用到新版本，老项目可以手工同步。
+
+### Q7. 想强制按最新模板重新生成所有文件？
+
+```bash
+# ⚠️ 会覆盖你手写的 INDEX.md / ADR / config 自定义，先 git commit 一次再跑
+harness init --force --mode=solo --stack=node-typescript --type=library --name=demo
+```
+
+不带 `--force` 时 init 默认**保留**已存在文件（即使内容与模板不同），返回 `action: skipped, reason: kept_existing`。
+
+### Q8. 项目以后不再使用 harness 怎么彻底清除？
+
+```bash
+harness uninstall --dry-run     # 先看会删什么
+harness uninstall               # 交互确认后递归删除 .harness/
+harness uninstall -y            # 一键清除，无确认（脚本用）
+```
+
+`CHANGELOG.md` 和 `.github/*` 因为 npm / GitHub 外部工具约定**不会**被自动删除，会列在 `kept[]` 里提醒你手工处理。
+
+如果只想清空 `.harness/` 内部但保留目录占位（便于 git 追踪）：
+
+```bash
+harness uninstall --keep-root-dir -y
+```
 
 ---
 

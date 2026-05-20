@@ -1,7 +1,7 @@
 # Feature Brief 模板
 
 > 用途：一句话或小型需求的迷你 PRD。
-> 落地位置：复制本文件到 `docs/features/<feature-kebab-name>/feature-brief.md`，
+> 落地位置：复制本文件到 `.harness/features/<feature-kebab-name>/feature-brief.md`，
 > 或在 PR 描述中直接填写本结构。
 
 ## 1. 背景与目标

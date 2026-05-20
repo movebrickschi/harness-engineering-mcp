@@ -52,4 +52,4 @@ applies_to: [all]
 
 ---
 
-> 任何项目可以在 `harness.config.json.modules.knowledge.ai_efficiency_strict` 中关闭部分硬规则，但默认全开。
+> 任何项目可以在 `.harness/config.json` 的 `modules.knowledge.ai_efficiency_strict` 中关闭部分硬规则，但默认全开。

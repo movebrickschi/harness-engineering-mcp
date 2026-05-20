@@ -1,4 +1,5 @@
-import type { RouteTaskToolInput, RouteTaskToolOutput, ForcedUpgrade } from "../../types/harness.js";
+import type { RouteTaskToolInput, RouteTaskToolOutput, ForcedUpgrade, HarnessConfig } from "../../types/harness.js";
+import { loadHarnessConfig } from "../config/loader.js";
 
 interface IntentRule {
   intent:
@@ -6,6 +7,8 @@ interface IntentRule {
     | "refactor"
     | "perf"
     | "third-party"
+    | "docs"
+    | "brainstorm"
     | "feature";
   patterns: RegExp[];
 }
@@ -26,6 +29,14 @@ const INTENT_RULES: IntentRule[] = [
   {
     intent: "third-party",
     patterns: [/接入|集成|integrate/i, /对接/i, /SDK|API[\s_-]?key/i, /webhook/i, /OAuth|微信|支付宝|Stripe/i],
+  },
+  {
+    intent: "docs" as IntentRule["intent"],
+    patterns: [/文档|注释|comment|readme|说明|描述|changelog|备注/i],
+  },
+  {
+    intent: "brainstorm" as IntentRule["intent"],
+    patterns: [/想做|帮我想|是否值得|头脑风暴|brainstorm|idea|设计方案|怎么设计/i],
   },
 ];
 
@@ -64,8 +75,13 @@ function detectModifiers(task: string): string[] {
 
 export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToolOutput> {
   const task = input.task.trim();
-  const intent = classifyIntent(task);
+  const allIntents = classifyAllIntents(task);
+  const intent = allIntents[0] ?? "feature";
   const modifiers = detectModifiers(task);
+  let projectConfig: HarnessConfig | null = null;
+  if (input.cwd) {
+    try { projectConfig = loadHarnessConfig(input.cwd); } catch { /* ignore */ }
+  }
 
   let forcedUpgrade: ForcedUpgrade | null = null;
   for (const kw of UPGRADE_KEYWORDS) {
@@ -75,35 +91,57 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
     }
   }
 
+  const multiIntentHint = allIntents.length > 1
+    ? `检测到多个意图: [${allIntents.join(", ")}]，当前按 ${intent} 路由。如需分开处理，请拆分任务`
+    : null;
+
+  const addMultiHint = (result: RouteTaskToolOutput): RouteTaskToolOutput => {
+    if (multiIntentHint) result.efficiency_hints.unshift(multiIntentHint);
+    return result;
+  };
+
   switch (intent) {
     case "bugfix":
-      return buildResult("bugfix-flow", "Bug 修复", [
+      return addMultiHint(buildResult("bugfix-flow", "Bug 修复", [
         "根因记录",
         "失败复现测试",
         "修复",
         "回归测试",
-      ], null, modifiers);
+      ], null, modifiers, projectConfig));
     case "refactor":
-      return buildResult("refactor-flow", "重构", [
+      return addMultiHint(buildResult("refactor-flow", "重构", [
         "重构边界说明",
         "关键路径测试覆盖",
         "行为零变化证据",
-      ], null, modifiers);
+      ], null, modifiers, projectConfig));
     case "perf":
-      return buildResult("perf-flow", "性能优化", [
+      return addMultiHint(buildResult("perf-flow", "性能优化", [
         "benchmark 基线",
         "profile 证据",
         "单变量优化结果对比",
-      ], null, modifiers);
+      ], null, modifiers, projectConfig));
     case "third-party":
-      return buildResult("third-party-flow", "第三方接入", [
+      return addMultiHint(buildResult("third-party-flow", "第三方接入", [
         "Vendor 适配层",
         "密钥/Webhook 安全审计",
         "沙箱 + 失败重放剧本",
-      ], null, modifiers);
+      ], null, modifiers, projectConfig));
+    case "docs":
+      return addMultiHint(buildResult("writing-plans", "文档任务", [
+        "文档产出",
+        "内容审校",
+      ], null, modifiers, projectConfig));
+    case "brainstorm":
+      return addMultiHint(buildResult("brainstorming", "头脑风暴", [
+        "设计文档",
+        "方案对比表",
+      ], null, modifiers, projectConfig));
     case "feature":
     default: {
-      const scope = input.context?.scope ?? inferScope(task);
+      const scopeResult = input.context?.scope
+        ? { scope: input.context.scope, fallback: false }
+        : inferScope(task);
+      const scope = scopeResult.scope;
       const hasPrd = input.context?.has_prd === true;
       const hasProto = input.context?.has_prototype === true;
 
@@ -114,7 +152,7 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
             : scope === "backend"
               ? "dev-flow-proto-be"
               : "dev-flow-full";
-        return buildResult(skill, "原型项目", ["MINI_PRD", "对照差异表", "切片验证"], forcedUpgrade, modifiers);
+        return addMultiHint(buildResult(skill, "原型项目", ["MINI_PRD", "对照差异表", "切片验证"], forcedUpgrade, modifiers, projectConfig));
       }
       if (hasPrd) {
         const skill =
@@ -123,13 +161,14 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
             : scope === "backend"
               ? "dev-flow-doc-be"
               : "dev-flow-doc-full";
-        return buildResult(
+        return addMultiHint(buildResult(
           skill,
           "完整 PRD",
           ["阶段文档 01-06", "Gate Review", "Code Review", "测试报告"],
           forcedUpgrade,
           modifiers,
-        );
+          projectConfig,
+        ));
       }
       const skill =
         scope === "frontend"
@@ -143,6 +182,7 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
         ["MINI_PRD", "IMPACT_ANALYSIS", "API_CONTRACT(if needed)"],
         forcedUpgrade,
         modifiers,
+        projectConfig,
       );
       if (forcedUpgrade) {
         oneliner.forced_upgrade = {
@@ -150,27 +190,39 @@ export async function routeTask(input: RouteTaskToolInput): Promise<RouteTaskToo
           reason: forcedUpgrade.reason,
         };
       }
-      return oneliner;
+      if (scopeResult.fallback) {
+        oneliner.efficiency_hints.unshift(
+          "开发范围未明确推断，建议手动指定 context.scope 参数以获得更精准的路由",
+        );
+      }
+      return addMultiHint(oneliner);
     }
   }
 }
 
-function classifyIntent(task: string): IntentRule["intent"] {
+function classifyAllIntents(task: string): IntentRule["intent"][] {
+  const hits: IntentRule["intent"][] = [];
   for (const rule of INTENT_RULES) {
-    if (rule.patterns.some((p) => p.test(task))) return rule.intent;
+    if (rule.patterns.some((p) => p.test(task))) hits.push(rule.intent);
   }
-  return "feature";
+  return hits.length > 0 ? hits : ["feature"];
 }
 
-function inferScope(task: string): "frontend" | "backend" | "full-stack" {
+interface ScopeResult {
+  scope: "frontend" | "backend" | "full-stack";
+  /** true 表示是兜底推断（前后端词都没命中） */
+  fallback: boolean;
+}
+
+function inferScope(task: string): ScopeResult {
   const feHints = /(前端|页面|列表|表单|按钮|UI|样式|交互|组件|路由)/i;
   const beHints = /(后端|接口|API|查询|字段|service|controller|mapper|SQL|缓存)/i;
   const hasFe = feHints.test(task);
   const hasBe = beHints.test(task);
-  if (hasFe && hasBe) return "full-stack";
-  if (hasFe) return "frontend";
-  if (hasBe) return "backend";
-  return "full-stack";
+  if (hasFe && hasBe) return { scope: "full-stack", fallback: false };
+  if (hasFe) return { scope: "frontend", fallback: false };
+  if (hasBe) return { scope: "backend", fallback: false };
+  return { scope: "full-stack", fallback: true };
 }
 
 function buildResult(
@@ -179,6 +231,7 @@ function buildResult(
   deliverables: string[],
   forcedUpgrade: ForcedUpgrade | null = null,
   modifiers: string[] = [],
+  config?: HarnessConfig | null,
 ): RouteTaskToolOutput {
   return {
     skill,
@@ -188,7 +241,7 @@ function buildResult(
     forced_upgrade: forcedUpgrade,
     suggested_next_tools: ["harness_load_skill", "harness_check"],
     modifiers,
-    efficiency_hints: efficiencyHintsFor(skill, modifiers, forcedUpgrade),
+    efficiency_hints: efficiencyHintsFor(skill, modifiers, forcedUpgrade, config),
   };
 }
 
@@ -196,6 +249,7 @@ function efficiencyHintsFor(
   skill: string,
   modifiers: string[],
   forcedUpgrade: ForcedUpgrade | null,
+  config?: HarnessConfig | null,
 ): string[] {
   const hints: string[] = [];
   hints.push(
@@ -227,6 +281,23 @@ function efficiencyHintsFor(
   }
   if (forcedUpgrade) {
     hints.push(`强制升级到 ${forcedUpgrade.to}：保留完整 PRD + 阶段文档，禁止偷工省略`);
+  }
+
+  if (config) {
+    const cov = config.modules?.quality?.coverage_baseline;
+    if (typeof cov === "number" && cov > 0)
+      hints.push(`本项目覆盖率底线 ${(cov * 100).toFixed(0)}%，新代码必须被测试覆盖`);
+    const maxLines = config.modules?.people?.pr_max_lines;
+    const maxFiles = config.modules?.people?.pr_max_files;
+    if (maxLines || maxFiles) {
+      const parts: string[] = [];
+      if (maxLines) parts.push(`${maxLines} 行`);
+      if (maxFiles) parts.push(`${maxFiles} 文件`);
+      hints.push(`PR 大小限制 ${parts.join(" / ")}，超限需拆分`);
+    }
+    const reviewSla = config.modules?.people?.review_sla_hours;
+    if (typeof reviewSla === "number")
+      hints.push(`Code Review SLA ${reviewSla} 小时，提交后尽早@reviewer`);
   }
 
   hints.push("回复 < 2000 字符，表格优于散文，独立工具调用一次性批发");

@@ -14,6 +14,11 @@ export function registerInitCommand(program: Command): void {
     .option("--type <type>", "backend-service | library | cli | frontend-spa")
     .option("--name <name>", "project name")
     .option("--dry-run", "show generated files without writing", false)
+    .option(
+      "--force",
+      "regenerate every harness file from template even if it already exists (overwrites custom content)",
+      false,
+    )
     .action(async (options: Record<string, string | boolean>) => {
       const tool = registerInitTool();
       let input: InitToolInput = {
@@ -23,6 +28,7 @@ export function registerInitCommand(program: Command): void {
         project_type: options.type as InitToolInput["project_type"],
         project_name: options.name as string | undefined,
         dry_run: Boolean(options.dryRun),
+        force: Boolean(options.force),
       };
 
       let result = await tool.handler(input, {

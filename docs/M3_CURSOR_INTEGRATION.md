@@ -1,6 +1,6 @@
 # M3 · Cursor MCP 联调记录
 
-> 目的：验证 `harness-engineering-mcp` 注册到 Cursor 后，可作为 MCP 服务向 AI 提供 6 个工具与 4 类资源；并通过 `harness://` URI 直接读取 spec / skills / rules / templates 全部内容。
+> 目的：验证 `harness-engineering-mcp` 注册到 Cursor 后，可作为 MCP 服务向 AI 提供 7 个工具与 4 类资源；并通过 `harness://` URI 直接读取 spec / skills / rules / templates 全部内容。
 >
 > 范围：M3 阶段的「Cursor 资源真实读取联调」验收。Claude Code / Codex CLI 留到 M4 一并联调。
 
@@ -22,7 +22,7 @@
    }
    ```
 
-3. 重启 Cursor 让 MCP 客户端重新加载，打开 Composer 任意会话即可在工具栏看到 `harness_init / harness_check / harness_route_task / harness_load_skill / harness_gate_review / harness_upgrade_mode` 六个工具。
+3. 重启 Cursor 让 MCP 客户端重新加载，打开 Composer 任意会话即可在工具栏看到 `harness_init / harness_check / harness_route_task / harness_load_skill / harness_gate_review / harness_upgrade_mode / harness_uninstall` 七个工具。
 
 > 全局安装版 `npm i -g harness-engineering-mcp` 发布后，`command` 改为 `harness-mcp` 即可，args 留空。
 
@@ -36,8 +36,9 @@
 | T2 | `调用 harness_load_skill name="dev-flow-oneliner-fe"` | 返回 `content` 包含 `一句话前端需求` |
 | T3 | `调用 harness_check cwd="C:/tmp/demo-project"` | 在未 init 的项目里返回 `status:"FAIL"`，`config.harness_config_missing` 命中 |
 | T4 | `调用 harness_init cwd="C:/tmp/demo-project" dry_run=true` | 返回 `status:"dry_run"` + `generated_files` 列表预览 |
-| T5 | `调用 harness_gate_review cwd="…" feature_name="search-v2" action="generate"` | 在 `docs/features/search-v2/` 下生成 `03_GATE_REVIEW.md` |
-| T6 | `调用 harness_upgrade_mode cwd="…" to="small-team"` | `harness.config.json` 内 `project.mode` 写为 `small-team` |
+| T5 | `调用 harness_gate_review cwd="…" feature_name="search-v2" action="generate"` | 在 `.harness/features/search-v2/` 下生成 `03_GATE_REVIEW.md` |
+| T6 | `调用 harness_upgrade_mode cwd="…" to="small-team"` | `.harness/config.json` 内 `project.mode` 写为 `small-team` |
+| T7 | `调用 harness_uninstall cwd="…" dry_run=true` | 返回 `status:"dry_run"`，`removed[]` 含 `.harness/config.json` 等，盘不动 |
 
 T1–T4 是 M3 的核心通路（route → load → check → init），T5–T6 属于 M4 的兜底；当前仅 T1–T4 在 Cursor 中被真实点击验证过。
 

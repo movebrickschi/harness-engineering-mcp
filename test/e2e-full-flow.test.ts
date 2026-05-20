@@ -41,8 +41,8 @@ describe("E2E · full harness lifecycle", () => {
         ctx(cwd, "harness_init"),
       );
       expect(initResult.status).toBe("completed");
-      expect(existsSync(join(cwd, "harness.config.json"))).toBe(true);
-      expect(existsSync(join(cwd, "docs/engineering-harness.md"))).toBe(true);
+      expect(existsSync(join(cwd, ".harness/config.json"))).toBe(true);
+      expect(existsSync(join(cwd, ".harness/engineering-harness.md"))).toBe(true);
 
       // Step 3: harness_route_task
       const routeTool = registerRouteTool();
@@ -80,7 +80,7 @@ describe("E2E · full harness lifecycle", () => {
         ctx(cwd, "harness_gate_review"),
       );
       expect(gateGen.status).toBe("generated");
-      expect(gateGen.file_path).toContain("docs/features/status-filter/03_GATE_REVIEW.md");
+      expect(gateGen.file_path).toContain(".harness/features/status-filter/03_GATE_REVIEW.md");
 
       // Step 7: gate_review check on the freshly generated file (has 示例 BLOCKER, no 通过)
       const gateCheck = await gateTool.handler(
@@ -108,8 +108,8 @@ describe("E2E · full harness lifecycle", () => {
       );
       expect(["PASS", "WARN"]).toContain(finalCheck.status);
 
-      // Step 10: confirm harness.config.json now reflects small-team mode
-      const cfg = JSON.parse(readFileSync(join(cwd, "harness.config.json"), "utf-8")) as {
+      // Step 10: confirm .harness/config.json now reflects small-team mode
+      const cfg = JSON.parse(readFileSync(join(cwd, ".harness/config.json"), "utf-8")) as {
         project: { mode: string };
       };
       expect(cfg.project.mode).toBe("small-team");
