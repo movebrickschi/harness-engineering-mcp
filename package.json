@@ -1,6 +1,6 @@
 {
   "name": "harness-engineering-mcp",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Engineering Harness as MCP server + CLI: ship a complete software engineering governance kit (spec, skills, rules, templates, checks) to any AI IDE (Cursor, Claude Code, Codex) with one config line.",
   "keywords": [
     "mcp",
@@ -23,10 +23,13 @@
   "types": "./dist/index.d.ts",
   "bin": {
     "harness": "./dist/cli.js",
-    "harness-mcp": "./dist/mcp-server.js"
+    "harness-mcp": "./dist/mcp-server.js",
+    "harness-mcp-server": "./dist/mcp-server.js",
+    "harness-engineering-mcp": "./dist/cli.js"
   },
   "files": [
-    "dist",
+    "dist/**/*.js",
+    "dist/**/*.d.ts",
     "assets",
     "README.md",
     "CHANGELOG.md",

@@ -31,21 +31,29 @@
 ## 1. 安装
 
 ```bash
-# 全局安装
+# 全局安装（推荐：装一次到处用、IDE 接入零超时）
 npm install -g harness-engineering-mcp
 
-# 或在项目里直接调用，不全局安装
-npx harness-engineering-mcp init
+# 或在项目里直接调用，不全局安装（≥ 0.2.1 起 npx 包名直调也能用）
+npx -y harness-engineering-mcp@latest init                  # CLI 简写
+npx -y -p harness-engineering-mcp@latest harness init       # CLI 标准写法
+npx -y -p harness-engineering-mcp@latest harness-mcp        # 起 MCP server
 ```
 
-安装后会同时提供：
+安装后同时提供 4 个 bin（后两个是 0.2.1 起新增的同义别名，方便记忆/避免凭直觉踩坑）：
 
 | 二进制 | 作用 |
 |---|---|
 | `harness` | CLI 主入口（init/check/route/upgrade/list/mcp/uninstall）|
 | `harness-mcp` | 启动 MCP server（IDE 自动调起，一般无需手工运行）|
+| `harness-engineering-mcp` | `harness` 的别名（=「包名直调」，兼容 `npx <包名>` 习惯）|
+| `harness-mcp-server` | `harness-mcp` 的别名（兼容 `@modelcontextprotocol/server-*` 命名习惯）|
 
 > Node 版本要求：`>= 20`。
+>
+> 一句话记忆：**全局安装后用裸命令 `harness` / `harness-mcp`；不全局安装就用 `npx -y -p harness-engineering-mcp@latest <bin>` 或 0.2.1 起的 `npx -y harness-engineering-mcp@latest <subcmd>`**。
+>
+> ⚠️ **首次 npx 接入 IDE 前请先在终端跑一次预热**（详见 [§8 IDE 接入](#8-ide-接入) 顶部），否则 Cursor / Claude Code 的 MCP 启动超时大概率把你卡死在 `Connection closed`。
 
 ---
 
@@ -621,10 +629,51 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 
 ## 8. IDE 接入
 
+> ### ⚡ 首次接入前必读：冷启动可能超时
+>
+> npx 在每台**新机器**上首次拉包 + 解 100+ 间接依赖耗时通常 **5-30 秒**，而 Cursor / Claude Code 对 MCP server 启动有默认超时（~5-10 秒）。一旦超时就会看到这种典型日志：
+>
+> ```
+> Connection failed: MCP error -32000: Connection closed
+> ```
+>
+> **首次接入前请先在该机器的终端跑一次预热**，让 npx 把包和依赖都灌进本地 cache：
+>
+> ```bash
+> npx -y -p harness-engineering-mcp@latest harness-mcp
+> # 看到下面这行就说明启动成功，按 Ctrl+C 退出即可：
+> # [harness-mcp] started harness-engineering-mcp vX.Y.Z on stdio
+> ```
+>
+> 之后再回 IDE 接入，Cursor / Claude Code / Codex 都能秒起。
+>
+> **团队 / 生产环境强烈推荐**：直接全局安装一次，IDE 配置写裸命令，启动开销 <100ms，不再受 npx 冷启动 / 网络 / cursor 启动超时影响：
+>
+> ```bash
+> npm i -g harness-engineering-mcp@latest
+> # 之后所有 IDE 的 mcp.json 都写：{ "command": "harness-mcp" }
+> ```
+>
+> Mac 用户额外注意：如果你用 nvm 装的 node，GUI 启动的 IDE 拿不到 nvm 路径，需把 mcp.json 的 `command` 改为 npx / harness-mcp 的**绝对路径**（`which npx` / `which harness-mcp` 查），或者干脆用 Homebrew 装 node。
+
 ### 8.1 Cursor
 
 ```json
 // ~/.cursor/mcp.json
+// 推荐：不依赖全局安装，npx 自动从 npm 拉取
+{
+  "mcpServers": {
+    "harness-engineering": {
+      "command": "npx",
+      "args": ["-y", "-p", "harness-engineering-mcp@latest", "harness-mcp"]
+    }
+  }
+}
+```
+
+已全局安装（`npm i -g harness-engineering-mcp`）后可简化为：
+
+```json
 {
   "mcpServers": {
     "harness-engineering": { "command": "harness-mcp" }
@@ -642,11 +691,14 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
   "mcpServers": {
     "harness-engineering": {
       "type": "stdio",
-      "command": "harness-mcp"
+      "command": "npx",
+      "args": ["-y", "-p", "harness-engineering-mcp@latest", "harness-mcp"]
     }
   }
 }
 ```
+
+> 已全局安装可简化为 `"command": "harness-mcp"`。Windows 上若 PATH 中找不到 `harness-mcp`，请用上面的 npx 写法。
 
 ### 8.3 Codex CLI
 
@@ -654,8 +706,11 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 # ~/.codex/config.toml
 [[mcp_servers]]
 name = "harness-engineering"
-command = "harness-mcp"
+command = "npx"
+args = ["-y", "-p", "harness-engineering-mcp@latest", "harness-mcp"]
 ```
+
+> 已全局安装可简化为 `command = "harness-mcp"`、删除 `args`。
 
 三 IDE 完整兼容性矩阵 + 联调脚本：`docs/M4_MULTI_IDE_INTEGRATION.md §3-5`。
 
@@ -700,7 +755,7 @@ harness upgrade --to=mid-team
 # .github/workflows/harness.yml
 - name: Harness Engineering check
   run: |
-    npx -y harness-engineering-mcp check --strict --run-tests --json > harness-report.json
+    npx -y -p harness-engineering-mcp@latest harness check --strict --run-tests --json > harness-report.json
 - name: Upload report
   if: always()
   uses: actions/upload-artifact@v4

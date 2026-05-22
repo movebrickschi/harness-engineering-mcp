@@ -9,3 +9,9 @@ vitest.config.ts
 coverage/
 .eslintrc*
 .prettierrc*
+
+# Build artifacts that should NOT ship to npm
+# (Source maps add ~500 KB to the tarball but are unused at runtime;
+#  they are still generated locally for debugging via tsup.config.ts.)
+dist/**/*.map
+dist/**/*.d.ts.map

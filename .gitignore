@@ -13,6 +13,9 @@ Thumbs.db
 *.tsbuildinfo
 .npm/
 .cache/
+
+# Local npm pack outputs (e.g. harness-engineering-mcp-0.2.1.tgz)
+*.tgz
 tmp/
 .tmp/
 .release-commit-msg.tmp

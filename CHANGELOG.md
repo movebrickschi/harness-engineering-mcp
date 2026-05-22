@@ -2,7 +2,47 @@
 
 ## [Unreleased]
 
-（暂无）
+## 0.2.1 — 2026-05-22
+
+### 背景
+
+0.2.0 发布后陆续在三台机器（Windows / Mac × 2）上验证 Cursor 接入，发现 npm 用户在「初装」环节有两个独立的高频踩坑：
+1. 包名 ≠ bin 名，凭直觉写 `npx <包名>` 必报 `could not determine executable to run`。
+2. npx 冷启动 5-30 秒，超过 Cursor MCP 启动默认超时（~5-10 秒），被 SIGKILL，看到 `Connection closed`，零 npm 输出。
+
+0.2.1 是一个**无破坏性变更的「初装体验补丁版」**：发布包瘦身 50%+、bin 名加 2 个同义别名、文档明确告知冷启动问题。无运行时行为变化，无 API 变化，0.2.0 用户直接升级即可。
+
+### Fixed
+
+- **`bin` 字段新增 2 个同义别名**，根治「包名 / bin 名不匹配 → npx 找不到可执行文件」的踩坑：
+  - `harness-engineering-mcp` → `dist/cli.js`（即 `harness` 的别名，让 `npx harness-engineering-mcp@latest init` 这种凭直觉的写法也能 work）
+  - `harness-mcp-server` → `dist/mcp-server.js`（即 `harness-mcp` 的别名，兼容 `@modelcontextprotocol/server-*` 命名习惯，对应 0.2.0 文档里曾经有人猜到的写法）
+- 老用户用 `harness` / `harness-mcp` 不受影响。新增别名是**纯向后兼容的添加**。
+
+### Changed
+
+- **发布包瘦身 ~506 KB / -50%+**：`.npmignore` 显式排除 `dist/**/*.map`、`dist/**/*.d.ts.map`。source map 仍由 `tsup.config.ts` 在本地构建时生成（开发调试用），只是不再随 npm 包发布。配合上面的 bin 别名，把新用户的 npx 冷启动从典型 ~20s 砍到 ~10-12s，间接缓解 Cursor MCP 启动超时问题。
+- 默认 server name banner / CLI `--version` 从 `0.2.0` 改为 `0.2.1`（同步版本号到 `src/cli/index.ts` 和 `src/mcp/server.ts`）。
+
+### Docs
+
+- **README §1「安装」更新**：展示 4 个 bin 表格（新增 `harness-engineering-mcp` / `harness-mcp-server` 两个别名说明），补一句「不全局安装就用 npx」的双写法提示。
+- **README §8「IDE 接入」新增「冷启动可能超时」开篇警告**：解释为什么新机器 npx 首启 5-30s + Cursor MCP 默认超时是 5-10s 的组合会触发 `Connection failed: MCP error -32000: Connection closed`，给出三种解法（终端预热 → 全局安装 → Mac nvm 用户用绝对路径）。
+- **修正所有 `npx` 调用写法**（从 0.2.0 的 `[Unreleased]` 整理而来）。由于本包名与 bin 名不同名，原 README / docs 多处 `npx -y harness-engineering-mcp ...` / `npx harness-engineering-mcp ...` 隐式调起示例会报 `could not determine executable to run`。统一改为：
+  - 调 CLI：`npx -y -p harness-engineering-mcp@latest harness <subcmd>` 或 0.2.1 起的简写 `npx -y harness-engineering-mcp@latest <subcmd>`
+  - 起 MCP server：`npx -y -p harness-engineering-mcp@latest harness-mcp`
+- 涉及文件：`README.md`、`docs/M3_CURSOR_INTEGRATION.md`、`docs/M4_MULTI_IDE_INTEGRATION.md`、`docs/IDE_DAILY_USAGE.md`、`docs/PROPOSAL.md`、`docs/releases/v0.2.0.md`。
+- `M3` / `M4` / `releases/v0.2.0` 中的 Cursor / Claude Code / Codex CLI 配置示例改为「npx 推荐 + 全局安装最简写法 + 本地源码联调备选」三段式。
+
+### Deferred — 推到 0.3.0
+
+> 0.2.1 本来还想做 **assets 网络化懒加载**（把 1.4 MB 的 skills / spec / templates 移出 npm 包，运行时从 GitHub raw 按需拉取 + 本地缓存）。但在评估后认定它**不适合作为 patch 版做**：
+>
+> 1. **引入网络依赖**：用户首次 `harness_load_skill` 时如果断网 / 内网墙 / GitHub 被屏蔽 → 直接失败。当前的本地 bundle 是离线 100% 可用。
+> 2. **缓存失效语义复杂**：assets 版本要不要绑包版本？老缓存怎么清？npm registry 镜像与 GitHub raw 一致性？这些都是 minor 版才能引入的破坏性折腾。
+> 3. **0.2.1 走 patch 的承诺**：只做无破坏性变更，不动构建系统、不动 IO 行为、不动 API。
+>
+> 0.3.0 将正式做这件事，预计能把发布包砍到 ~150 KB，冷启动 <3 秒。详细方案见即将创建的 `docs/proposals/0.3.0-asset-lazyload.md`。
 
 ## 0.2.0 — 2026-05-20
 

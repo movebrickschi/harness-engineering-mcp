@@ -97,7 +97,7 @@ AI 自动：
 `.github/workflows/harness.yml`：
 
 ```yaml
-- run: npx -y harness-engineering-mcp@latest check --strict --run-tests --json > harness-report.json
+- run: npx -y -p harness-engineering-mcp@latest harness check --strict --run-tests --json > harness-report.json
 - if: always()
   uses: actions/upload-artifact@v4
   with: { name: harness-report, path: harness-report.json }

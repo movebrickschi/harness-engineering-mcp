@@ -6,25 +6,59 @@
 
 ---
 
-## 1. 接入步骤（用户本机已验证）
+## 1. 接入步骤
 
-1. 在仓库根目录执行 `npm run build`，确认 `dist/mcp-server.js`、`dist/cli.js`、`dist/index.js` 全部生成。
-2. 把以下条目追加到 `~/.cursor/mcp.json`（或工作区级 `.cursor/mcp.json`）：
+> 0.2.0 起已发布到 npm，**首选 npx 写法**（零依赖、零安装、自动拉最新）。本地源码改动需要边改边联调时再用「绝对路径」备选。
 
-   ```json
-   {
-     "mcpServers": {
-       "harness-engineering": {
-         "command": "node",
-         "args": ["C:/lcc/workspace/harness-engineering-mcp/dist/mcp-server.js"]
-       }
-     }
-   }
-   ```
+把以下条目追加到 `~/.cursor/mcp.json`（或工作区级 `.cursor/mcp.json`）。
 
-3. 重启 Cursor 让 MCP 客户端重新加载，打开 Composer 任意会话即可在工具栏看到 `harness_init / harness_check / harness_route_task / harness_load_skill / harness_gate_review / harness_upgrade_mode / harness_uninstall` 七个工具。
+### 1.1 推荐：npx 拉 npm 已发布版
 
-> 全局安装版 `npm i -g harness-engineering-mcp` 发布后，`command` 改为 `harness-mcp` 即可，args 留空。
+```json
+{
+  "mcpServers": {
+    "harness-engineering": {
+      "command": "npx",
+      "args": ["-y", "-p", "harness-engineering-mcp@latest", "harness-mcp"]
+    }
+  }
+}
+```
+
+> ⚠️ **不要**写成 `["-y", "harness-engineering-mcp@latest"]`。包名 `harness-engineering-mcp` 与 bin 名（`harness` / `harness-mcp`）不一致，现代 npm 8+ 在 npx 隐式调起时会报 `could not determine executable to run`。必须用 `-p <pkg> <bin>` 分别指定。
+
+### 1.2 已全局安装：最简写法
+
+如果已经 `npm i -g harness-engineering-mcp`，PATH 中有 `harness-mcp`，可简化为：
+
+```json
+{
+  "mcpServers": {
+    "harness-engineering": { "command": "harness-mcp" }
+  }
+}
+```
+
+### 1.3 本地源码联调：绝对路径
+
+在本仓库内改源码 + 反复 `npm run build` 验证时，直接指向 dist 产物可跳过 npm 拉取耗时：
+
+```json
+{
+  "mcpServers": {
+    "harness-engineering": {
+      "command": "node",
+      "args": ["C:/lcc/workspace/harness-engineering-mcp/dist/mcp-server.js"]
+    }
+  }
+}
+```
+
+> 先在仓库根目录执行 `npm run build`，确认 `dist/mcp-server.js`、`dist/cli.js`、`dist/index.js` 全部生成。
+
+---
+
+重启 Cursor 让 MCP 客户端重新加载，打开 Composer 任意会话即可在工具栏看到 `harness_init / harness_check / harness_route_task / harness_load_skill / harness_gate_review / harness_upgrade_mode / harness_uninstall` 七个工具。
 
 ---
 

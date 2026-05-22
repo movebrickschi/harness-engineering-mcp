@@ -242,7 +242,7 @@ npm i -g harness-engineering-mcp
 # 项目初始化（也支持 npx）
 harness init                  # 交互式
 harness init --mode=solo --stack=java-spring --type=backend-service --name=my-proj
-npx harness-engineering-mcp init   # 不全局安装
+npx -y -p harness-engineering-mcp@latest harness init   # 不全局安装（包名 ≠ bin 名，必须用 -p 写法）
 
 # 跑门禁
 harness check

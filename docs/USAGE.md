@@ -94,6 +94,20 @@ harness check --run-tests
 
 ```json
 // ~/.cursor/mcp.json
+// 推荐：npx 写法，不依赖全局安装
+{
+  "mcpServers": {
+    "harness-engineering": {
+      "command": "npx",
+      "args": ["-y", "-p", "harness-engineering-mcp@latest", "harness-mcp"]
+    }
+  }
+}
+```
+
+已全局安装（`npm i -g harness-engineering-mcp`）后可简化为：
+
+```json
 {
   "mcpServers": {
     "harness-engineering": { "command": "harness-mcp" }

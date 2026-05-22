@@ -8,7 +8,7 @@ import { registerMcpCommand } from "./commands/mcp.js";
 import { registerRouteCommand } from "./commands/route.js";
 import { registerUninstallCommand } from "./commands/uninstall.js";
 
-const VERSION = "0.2.0";
+const VERSION = "0.2.1";
 
 export async function runCli(argv: string[] = process.argv): Promise<void> {
   const program = new Command();
