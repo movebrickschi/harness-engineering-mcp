@@ -53,7 +53,7 @@ npx -y -p harness-engineering-mcp@latest harness-mcp        # 起 MCP server
 >
 > 一句话记忆：**全局安装后用裸命令 `harness` / `harness-mcp`；不全局安装就用 `npx -y -p harness-engineering-mcp@latest <bin>` 或 0.2.1 起的 `npx -y harness-engineering-mcp@latest <subcmd>`**。
 >
-> ⚠️ **首次 npx 接入 IDE 前请先在终端跑一次预热**（详见 [§8 IDE 接入](#8-ide-接入) 顶部），否则 Cursor / Claude Code 的 MCP 启动超时大概率把你卡死在 `Connection closed`。
+> 💡 **0.3.0 起已彻底打包零依赖**：发布包是单个自包含 tarball，无任何运行时依赖。npx 首次冷启动 < 3 秒，**不再需要预热**，配置一次即可直接接入 IDE。
 
 ---
 
@@ -629,25 +629,15 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 
 ## 8. IDE 接入
 
-> ### ⚡ 首次接入前必读：冷启动可能超时
+> ### ⚡ 0.3.0 起：零依赖、免预热、配置即跑
 >
-> npx 在每台**新机器**上首次拉包 + 解 100+ 间接依赖耗时通常 **5-30 秒**，而 Cursor / Claude Code 对 MCP server 启动有默认超时（~5-10 秒）。一旦超时就会看到这种典型日志：
+> 从 **0.3.0** 开始，发布包做了「全依赖打包」：`dependencies` 字段为空，`dist/` 是自包含 bundle。新机器 `npx` 首次只下载一个 ~900 KB 的 tarball，**全程无传递依赖解析**，本机实测 **install 2.2s + 启动 0.3s ≈ 总 2.5s**（网络好时），稳低于 Cursor / Claude Code 的 MCP 握手超时（~10s）。
 >
-> ```
-> Connection failed: MCP error -32000: Connection closed
-> ```
+> **你不再需要预热**：直接把下面的 §8.1 / §8.2 / §8.3 配置粘进 IDE 即可。
 >
-> **首次接入前请先在该机器的终端跑一次预热**，让 npx 把包和依赖都灌进本地 cache：
+> 老用户从 0.2.x 升级注意：`dependencies` 已清空，如果你之前用 `npm i -g` 全局装过，建议 `npm i -g harness-engineering-mcp@latest` 刷一次，去掉那 5 个用不到的间接依赖（ajv / globby / simple-git / yaml / zod）。
 >
-> ```bash
-> npx -y -p harness-engineering-mcp@latest harness-mcp
-> # 看到下面这行就说明启动成功，按 Ctrl+C 退出即可：
-> # [harness-mcp] started harness-engineering-mcp vX.Y.Z on stdio
-> ```
->
-> 之后再回 IDE 接入，Cursor / Claude Code / Codex 都能秒起。
->
-> **团队 / 生产环境强烈推荐**：直接全局安装一次，IDE 配置写裸命令，启动开销 <100ms，不再受 npx 冷启动 / 网络 / cursor 启动超时影响：
+> **团队 / 生产环境**仍然推荐全局安装一次，让 IDE 配置最干净：
 >
 > ```bash
 > npm i -g harness-engineering-mcp@latest

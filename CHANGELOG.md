@@ -2,6 +2,40 @@
 
 ## [Unreleased]
 
+## 0.3.0 — 2026-05-25
+
+### 背景
+
+0.2.1 通过排除 source map 把首装时间从 ~20s 砍到 ~10s，但 Cursor / Claude Code 的 MCP 握手默认超时是 5-10s，仍然在临界点，新机器首启依旧会随机踩坑 `Connection failed: MCP error -32000: Connection closed`，README §8 不得不要求用户先在终端跑一次预热。
+
+0.3.0 彻底根治这个问题：**「全依赖打包 + 清零运行时依赖」**，让 npm 这边没有任何传递依赖可解，发布包就是 1 个自包含 tarball。新机器实测 `npm install` 2.2s + 启动 0.3s ≈ 总 2.5s，远低于握手超时，**真正免预热**。
+
+### Changed (BREAKING None · 行为完全等价 · 仅安装体验改变)
+
+- **`package.json` 的 `dependencies` 由 9 个 → 0 个**：
+  - 删除 5 个 src/test 里**完全未使用**的死代码依赖：`ajv` / `globby` / `simple-git` / `yaml` / `zod`（grep 全仓库 0 引用，PROPOSAL.md 里曾经规划但实际未实现的能力）；
+  - 剩余 5 个真实使用的依赖（`@modelcontextprotocol/sdk` / `commander` / `handlebars` / `picocolors` / `prompts`）移入 `devDependencies`，由 tsup 在构建期直接打进 dist；
+  - 发布包对消费者来说**零运行时依赖**，npm 不需要解析传递依赖树。
+
+- **`tsup.config.ts` 启用 `noExternal`**：三个入口（`index.ts` / `cli.ts` / `mcp-server.ts`）都把 5 个真实依赖一起打进 bundle。
+  - 副作用：`dist/mcp-server.js` 84 KB → 799 KB，`dist/cli.js` 95 KB → 1.05 MB（自包含，无需 `node_modules`）；
+  - 发布 tarball 由 371 KB → 897 KB，**单文件下载，0 网络往返解依赖**，net win。
+
+- **版本号同步**：`src/cli/index.ts` 与 `src/mcp/server.ts` 的硬编码 `VERSION` 由 `0.2.1` → `0.3.0`。
+
+### Docs
+
+- **README §1**「一句话记忆」下方的 ⚠️ 预热警告改为 💡 `0.3.0 起已彻底打包零依赖`，告诉用户「不再需要预热」。
+- **README §8 IDE 接入**「⚡ 首次接入前必读：冷启动可能超时」整段重写为「⚡ 0.3.0 起：零依赖、免预热、配置即跑」，附带本机实测数据与升级老用户的提示。
+
+### Verified
+
+- `npm run typecheck` ✅
+- `npm run lint` ✅
+- `npm test` ✅ 69/69 通过
+- **真实 MCP 协议 E2E**：bundled `dist/mcp-server.js` 经 stdio 完成 `initialize` → `tools/list` → `resources/list` 全流程，返回 7 tools + 107 resources，确认 `@modelcontextprotocol/sdk` 内部 ajv 验证器在 bundle 后仍正常工作（无动态 `require` 失败）。
+- **冷启动实测**（Windows 本机 `npm install ./harness-engineering-mcp-0.3.0.tgz --no-save`）：install 2165 ms，node 启动到 banner 输出 258 ms，**总 2.4s**。
+
 ## 0.2.1 — 2026-05-22
 
 ### 背景

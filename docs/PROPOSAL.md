@@ -387,12 +387,14 @@ harness-engineering-mcp/
 | `commander` | CLI 命令解析 |
 | `prompts` 或 `inquirer` | 交互式 init |
 | `handlebars` 或 `mustache` | 模板渲染 |
-| `ajv` | .harness/config.json schema 校验 |
-| `globby` | 文件扫描 |
-| `simple-git` | git log / contributors 分析 |
+| ~~`ajv`~~ | ~~.harness/config.json schema 校验~~（0.3.0 移除，规划未实现，需要时再加回） |
+| ~~`globby`~~ | ~~文件扫描~~（0.3.0 移除，实际用 `node:fs` readdirSync 已够用） |
+| ~~`simple-git`~~ | ~~git log / contributors 分析~~（0.3.0 移除，未实现） |
 | `picocolors` | 终端着色 |
 | `vitest` | 单测 |
 | `tsup` | 打包编译 |
+
+> 备注：0.3.0 起 `dependencies` 字段已清空——以上"用到"的依赖（`@modelcontextprotocol/sdk` / `commander` / `prompts` / `handlebars` / `picocolors`）由 tsup 直接打进 dist，发布包对消费者来说是零依赖单文件。
 
 ---
 

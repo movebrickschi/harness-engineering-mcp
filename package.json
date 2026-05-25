@@ -1,6 +1,6 @@
 {
   "name": "harness-engineering-mcp",
-  "version": "0.2.1",
+  "version": "0.3.0",
   "description": "Engineering Harness as MCP server + CLI: ship a complete software engineering governance kit (spec, skills, rules, templates, checks) to any AI IDE (Cursor, Claude Code, Codex) with one config line.",
   "keywords": [
     "mcp",
@@ -58,28 +58,22 @@
     "test:coverage": "vitest run --coverage",
     "prepublishOnly": "npm run typecheck && npm run lint && npm run test && npm run build"
   },
-  "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.4",
-    "ajv": "^8.17.1",
-    "commander": "^12.1.0",
-    "globby": "^14.0.2",
-    "handlebars": "^4.7.8",
-    "picocolors": "^1.1.1",
-    "prompts": "^2.4.2",
-    "simple-git": "^3.27.0",
-    "yaml": "^2.6.1",
-    "zod": "^3.23.8"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@eslint/js": "^9.17.0",
+    "@modelcontextprotocol/sdk": "^1.0.4",
     "@types/node": "^22.10.2",
     "@types/prompts": "^2.4.9",
     "@typescript-eslint/eslint-plugin": "^8.18.0",
     "@typescript-eslint/parser": "^8.18.0",
     "@vitest/coverage-v8": "^2.1.8",
+    "commander": "^12.1.0",
     "eslint": "^9.17.0",
     "eslint-config-prettier": "^9.1.0",
+    "handlebars": "^4.7.8",
+    "picocolors": "^1.1.1",
     "prettier": "^3.4.2",
+    "prompts": "^2.4.2",
     "tsup": "^8.3.5",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2",
