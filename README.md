@@ -633,7 +633,7 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 >
 > 从 **0.3.0** 开始，发布包做了「全依赖打包」：`dependencies` 字段为空，`dist/` 是自包含 bundle。新机器 `npx` 首次只下载一个 ~900 KB 的 tarball，**全程无传递依赖解析**，本机实测 **install 2.2s + 启动 0.3s ≈ 总 2.5s**（网络好时），稳低于 Cursor / Claude Code 的 MCP 握手超时（~10s）。
 >
-> **你不再需要预热**：直接把下面的 §8.1 / §8.2 / §8.3 配置粘进 IDE 即可。
+> **你不再需要预热**：直接把下面的 §8.2 / §8.3 / §8.4 配置粘进 IDE 即可。
 >
 > 老用户从 0.2.x 升级注意：`dependencies` 已清空，如果你之前用 `npm i -g` 全局装过，建议 `npm i -g harness-engineering-mcp@latest` 刷一次，去掉那 5 个用不到的间接依赖（ajv / globby / simple-git / yaml / zod）。
 >
@@ -644,9 +644,86 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 > # 之后所有 IDE 的 mcp.json 都写：{ "command": "harness-mcp" }
 > ```
 >
-> Mac 用户额外注意：如果你用 nvm 装的 node，GUI 启动的 IDE 拿不到 nvm 路径，需把 mcp.json 的 `command` 改为 npx / harness-mcp 的**绝对路径**（`which npx` / `which harness-mcp` 查），或者干脆用 Homebrew 装 node。
+> Mac 用户额外注意：如果你用 nvm 装的 node，GUI 启动的 IDE 拿不到 nvm 路径，需要按下面 §8.1 的 3 种方案任选一个绕开（**不只我们这个 MCP，所有 npm-based MCP 在 Mac + nvm 环境下都有这个问题**）。
 
-### 8.1 Cursor
+### 8.1 🍎 Mac + nvm 用户必读：3 种修复（普适问题）
+
+**问题描述**：在 Mac 上，如果你用 nvm 管理 node，从 Dock / Spotlight 启动的 Cursor / Claude Code 等 GUI 应用，由 `launchd` 拉起，**`launchd` 不会读你的 `~/.zshrc`**，所以拿不到 nvm 注入的 PATH。结果就是 mcp.json 里写 `"command": "npx"` 时，IDE 找不到 `npx` 可执行，MCP server 起不来。
+
+**这是 npm-based MCP 生态的普适问题**，跟我们这个包零关系。`@modelcontextprotocol/server-filesystem` / `server-github` / `server-puppeteer` 等官方 demo 也都受同样影响。Anthropic / Cursor 官方文档对此也有专门说明。
+
+**3 种修复（任选其一）**：
+
+#### 方案 A · 写绝对路径（最简单，1 分钟）
+
+```bash
+# 先在终端查出你当前 node / npx 的绝对路径
+which node
+which npx
+# 例如可能输出：/Users/你/.nvm/versions/node/v22.13.0/bin/npx
+```
+
+然后把 mcp.json 改为绝对路径：
+
+```json
+{
+  "mcpServers": {
+    "harness-engineering": {
+      "command": "/Users/你/.nvm/versions/node/v22.13.0/bin/npx",
+      "args": ["-y", "-p", "harness-engineering-mcp@latest", "harness-mcp"]
+    }
+  }
+}
+```
+
+> 缺点：用 `nvm use` 换了 node 版本后这条路径会失效，需要再改一次。
+
+#### 方案 B · 软链到 `/usr/local/bin`（一劳永逸，但要 sudo）
+
+```bash
+sudo ln -sf $(which node) /usr/local/bin/node
+sudo ln -sf $(which npx)  /usr/local/bin/npx
+```
+
+`/usr/local/bin` 在 launchd 的**默认 PATH** 里，软链好之后 mcp.json 写 `"command": "npx"` 即可正常工作。
+
+> 缺点：换 nvm 版本后要重 ln 一次。
+
+#### 方案 C · 改用 Homebrew node（最干净，推荐给重度使用 MCP 的用户）
+
+```bash
+# 如果你不重度使用 nvm 切版本，可以直接卸了换 Homebrew
+brew install node
+# 然后从 .zshrc / .bashrc 删除 nvm 的 export 行
+# 最后重启终端 + 重启 Cursor
+```
+
+Homebrew 把 node 装在 `/opt/homebrew/bin`（Apple Silicon）或 `/usr/local/bin`（Intel），**这两个目录都在 launchd 默认 PATH 里**，所有 GUI 应用都能直接找到 `node` / `npx`，再也不会撞 PATH 问题。
+
+> 缺点：失去 nvm 多版本切换能力。如果你日常要在多个 node 版本之间切，请走方案 A 或 B。
+
+#### 我们的建议
+
+| 你的情况 | 推荐方案 |
+|---|---|
+| 平时不切 node 版本 | **方案 C**（最干净） |
+| 偶尔切版本，但不嫌每次重 ln | **方案 B** |
+| 经常切版本 | **方案 A**（绝对路径写死，每次切版本同步改 mcp.json） |
+
+#### 验证修复
+
+修完之后，从 Dock 重启 Cursor，在 MCP 面板里看到 `harness-engineering` 变绿即可。命令行可以这样独立验证 GUI 启动器能否找到 npx：
+
+```bash
+# 模拟 GUI 应用的 launchd 启动环境，看 npx 在不在 PATH
+launchctl getenv PATH | tr ':' '\n' | grep -E "(nvm|node|local/bin|homebrew)"
+# 然后试试 launchd 能不能直接执行 npx：
+osascript -e 'do shell script "which npx"'
+```
+
+如果 `osascript` 这一行能输出路径，说明 launchd 环境下 npx 可达，Cursor 一定能调起来。
+
+### 8.2 Cursor
 
 ```json
 // ~/.cursor/mcp.json
@@ -673,7 +750,7 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 
 详细测试清单见 `docs/M3_CURSOR_INTEGRATION.md`。
 
-### 8.2 Claude Code
+### 8.3 Claude Code
 
 ```json
 // ~/.config/claude-code/mcp.json
@@ -690,7 +767,7 @@ harness uninstall --keep-root-dir -y    # 清空内容、保留 .harness/ 占位
 
 > 已全局安装可简化为 `"command": "harness-mcp"`。Windows 上若 PATH 中找不到 `harness-mcp`，请用上面的 npx 写法。
 
-### 8.3 Codex CLI
+### 8.4 Codex CLI
 
 ```toml
 # ~/.codex/config.toml
