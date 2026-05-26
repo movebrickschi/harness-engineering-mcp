@@ -300,6 +300,7 @@ function efficiencyHintsFor(
       hints.push(`Code Review SLA ${reviewSla} 小时，提交后尽早@reviewer`);
   }
 
+  hints.push("大项目（≥50 文件）建议配合 codegraph skill 加速代码理解（harness_load_skill name=codegraph）");
   hints.push("回复 < 2000 字符，表格优于散文，独立工具调用一次性批发");
-  return hints.slice(0, 6);
+  return hints.slice(0, 7);
 }

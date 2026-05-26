@@ -45,6 +45,12 @@ allow_multiple: true
 
 ### 阶段 2 · 根因调查（强制 `/investigate`）
 
+- **CodeGraph 加速**（如项目已安装 CodeGraph）：
+  1. `codegraph_status` → 确认索引可用
+  2. `codegraph_search` → 定位报错函数
+  3. `codegraph_callers` → 反向追踪调用链，缩小根因范围
+  4. `codegraph_impact` → 评估修复影响半径
+  5. 若 `codegraph_status` 不可用 → 降级为 Grep + Read 传统方式
 - 调用 `/investigate` 走完 4 阶段（investigate/analyze/hypothesize/implement）
 - **铁律**：未找到根因不许动手改代码
 - 输出 `RCA.md`（模板见 _playbook.md Part E.10）

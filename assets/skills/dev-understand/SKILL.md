@@ -44,7 +44,12 @@ related: [codegraph, brainstorming, writing-plans]
 
 1. `move_agent_to_root` 切到 A 项目
 2. **立即** `/freeze` + SwitchMode 到 plan
-3. 浏览器走查目标 URL：
+3. **CodeGraph 加速**（如项目已安装 CodeGraph）：
+   - `codegraph_status` → 确认索引可用
+   - `codegraph_files` → 快速获取项目文件结构
+   - `codegraph_context intent="explain"` → 理解核心模块架构
+   - 若不可用 → 跳过，走下面的传统探索流程
+4. 浏览器走查目标 URL：
    - `browser_snapshot` + `browser_take_screenshot`
    - 点击所有可交互元素
    - `browser_network_requests` 抓 API

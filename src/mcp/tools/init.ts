@@ -117,6 +117,7 @@ export function registerInitTool(): ToolDefinition<InitToolInput, InitToolOutput
           "运行 harness_check 跑首次门禁",
           `查看 ${HARNESS_PATHS.ssot} 熟悉项目 SSOT`,
           "如团队规模发生变化可运行 harness_upgrade_mode 升档",
+          "（可选）安装 CodeGraph 加速代码导航：npm i -g codegraph && codegraph init -i",
         ],
       };
     },

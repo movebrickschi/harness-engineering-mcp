@@ -32,6 +32,11 @@ related: [test-driven-development, using-git-worktrees, testing-anti-patterns, c
 ### 阶段 1 · 现状评估
 
 - 用 `/health` 跑当前分数
+- **CodeGraph 加速**（如项目已安装 CodeGraph）：
+  1. `codegraph_status` → 确认索引可用
+  2. `codegraph_impact` → 评估重构目标的 blast radius（谁依赖它、它依赖谁）
+  3. `codegraph_callers` → 列出所有调用点（需要同步修改的位置）
+  4. 若不可用 → 降级为 Grep 搜索引用 + explore subagent
 - 用 explore subagent 列出待重构区域的：依赖入度 / 出度 / 测试覆盖率 / 已知 TODO/FIXME
 - 输出 `REFACTOR_BASELINE.md`（行为基线 + 健康分基线）
 
