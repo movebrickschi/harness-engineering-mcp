@@ -17,6 +17,8 @@ import { registerSpecResources } from "./resources/spec.js";
 import { registerSkillsResources } from "./resources/skills.js";
 import { registerRulesResources } from "./resources/rules.js";
 import { registerTemplatesResources } from "./resources/templates.js";
+import { realpathSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import type { ToolDefinition, ResourceListItem, ResourceContent } from "../types/mcp.js";
 
 export interface ServerOptions {
@@ -134,6 +136,18 @@ export async function startMcpServer(options: ServerOptions = {}): Promise<void>
   );
 }
 
-if (process.argv[1] && /(?:^|[\\/])(?:mcp-server\.js|server\.ts)$/.test(process.argv[1])) {
+function isDirectRun(): boolean {
+  if (!process.argv[1]) return false;
+  if (/(?:^|[\\/])(?:mcp-server\.js|server\.ts|harness-mcp(?:-server)?)$/.test(process.argv[1])) {
+    return true;
+  }
+  try {
+    return realpathSync(process.argv[1]) === fileURLToPath(import.meta.url);
+  } catch {
+    return false;
+  }
+}
+
+if (isDirectRun()) {
   void startMcpServer();
 }
