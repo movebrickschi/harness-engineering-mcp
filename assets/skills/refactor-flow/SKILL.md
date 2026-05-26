@@ -10,7 +10,7 @@ applies_to: [all]
 priority: P1
 usage_frequency: weekly
 depends_on: []
-related: [test-driven-development, using-git-worktrees, testing-anti-patterns]
+related: [test-driven-development, using-git-worktrees, testing-anti-patterns, codegraph]
 ---
 
 # refactor-flow

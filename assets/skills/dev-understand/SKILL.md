@@ -1,6 +1,7 @@
 ---
 name: dev-understand
 description: 双项目开发流程的"理解需求"阶段（阶段 0-2）。在 PM 给的原型项目中只读探索，产出抽象化的需求文档，并通过 PM 沟通循环确保需求清晰。Use when asked to "理解需求", "梳理业务", "探索原型项目", "/dev-understand", or when user has a prototype project from PM but doesn't yet have clear requirements documented. Voice triggers: "理解需求", "梳理业务".
+related: [codegraph, brainstorming, writing-plans]
 ---
 
 # Dev Understand - 理解需求阶段

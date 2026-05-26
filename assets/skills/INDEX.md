@@ -28,11 +28,15 @@ flowchart TD
 
   bug --> debug[systematic-debugging]
   debug --> rct[root-cause-tracing]
+  debug -.-> cg[codegraph]
   rct --> tdd
 
   refac --> wgw[using-git-worktrees]
+  refac -.-> cg
   wgw --> tap[testing-anti-patterns]
   tap --> tdd
+
+  understand -.-> cg
 
   ship --> verify[verification-before-completion]
   verify --> rcr[requesting-code-review]
@@ -40,12 +44,15 @@ flowchart TD
 
   classDef hot fill:#ffeaa7,stroke:#fdcb6e
   classDef warm fill:#74b9ff,stroke:#0984e3
+  classDef tool fill:#a29bfe,stroke:#6c5ce7
   class brain,plan,implement,tdd,debug,verify,exec hot
   class understand,ship,rcr,finish warm
+  class cg tool
 ```
 
 🟡 黄色：每日 / 每个需求都用
 🔵 蓝色：每周 / 关键阶段用
+🟣 紫色：工具加速器（可选）
 
 ---
 
@@ -86,6 +93,7 @@ flowchart TD
 
 | skill | 用途 |
 |---|---|
+| `codegraph` | 语义图谱加速代码理解（大项目 ≥50 文件） |
 | `root-cause-tracing` | 调用栈反向追根因 |
 | `defense-in-depth` | 多层校验设计 |
 | `condition-based-waiting` | 解决 flaky 测试 |
