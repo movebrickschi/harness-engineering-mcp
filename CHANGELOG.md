@@ -7,6 +7,11 @@
 - **版本号收拢为单一真理源，消除「server 上报旧版本」隐患**：新增 `src/core/version.ts`，运行时从 `package.json` 回溯读取版本（开发态 / tsup bundle 两态一致）；`src/mcp/server.ts` 与 `src/cli/index.ts` 不再各自硬编码版本字符串。此前 0.3.1 发布时漏改了 `server.ts` 的 fallback，导致 MCP `initialize` 与 stdio banner 仍上报 `v0.3.0`。新增 `test/version.test.ts` 断言上报版本严格等于 `package.json.version`，防止再次漂移。今后发版只改 `package.json`（`npm version` 自动维护）即可。
 - **修复 CLI 在 ESM 产物下一启动即崩溃**：`tsup.config.ts` 用 `noExternal` 把 `commander`（CJS）打进 ESM bundle 后，其内部 `require("events")` 触发 esbuild 的 `Dynamic require of "events" is not supported`，导致 `dist/cli.js`（即发布版 `npx harness-engineering-mcp <cmd>` 的全部 CLI 命令）自 0.3.0 起一运行就崩。给三个入口的 banner 注入 `createRequire(import.meta.url)`，让 ESM 产物拥有可用的 `require`。MCP server（stdio）不受此 bug 影响，本次一并加固。已验证 `cli --version` 输出 0.3.1、`cli --help` 正常列命令、mcp-server banner 正常。
 
+### Changed
+
+- **CI 扩为跨平台 + 多 Node 版本矩阵**：`.github/workflows/ci.yml` 拆为 `static`（typecheck + lint 跑一次）与 `test`（`os: [ubuntu-latest, windows-latest] × node: [20, 22, 24]`，`fail-fast: false`）两段。此前仅 `ubuntu + node20` 单点，而项目同时维护 PowerShell(.ps1) 与 sh 两套门禁脚本，Windows 路径从未在 CI 验证过。
+- **覆盖率统计扩到全量源码**：`vitest.config.ts` 的 coverage `include` 由 `core/** + init + check` 三处扩为 `src/**`（排除 `types/**` 与 `index.ts` barrel），消除「分母被缩小导致的虚高」。整体实测 stmts 82.78% / branch 77% / funcs 93%，阈值相应上调到 80 / 72 / 88 / 80（lines 80），让门禁能真正挡住覆盖率倒退。`src/mcp/server.ts` 仍是低覆盖盲区（约 8.8%），待后续补 handler 单测。
+
 ## 0.3.1 — 2026-05-26
 
 ### Fixed
