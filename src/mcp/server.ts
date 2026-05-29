@@ -20,6 +20,7 @@ import { registerTemplatesResources } from "./resources/templates.js";
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import type { ToolDefinition, ResourceListItem, ResourceContent } from "../types/mcp.js";
+import { VERSION } from "../core/version.js";
 
 export interface ServerOptions {
   serverName?: string;
@@ -32,7 +33,7 @@ export function createMcpServer(options: ServerOptions = {}): Server {
   const server = new Server(
     {
       name: options.serverName ?? "harness-engineering-mcp",
-      version: options.serverVersion ?? "0.3.0",
+      version: options.serverVersion ?? VERSION,
     },
     {
       capabilities: {
@@ -132,7 +133,7 @@ export async function startMcpServer(options: ServerOptions = {}): Promise<void>
   const transport = new StdioServerTransport();
   await server.connect(transport);
   process.stderr.write(
-    `[harness-mcp] started ${options.serverName ?? "harness-engineering-mcp"} v${options.serverVersion ?? "0.3.0"} on stdio\n`,
+    `[harness-mcp] started ${options.serverName ?? "harness-engineering-mcp"} v${options.serverVersion ?? VERSION} on stdio\n`,
   );
 }
 

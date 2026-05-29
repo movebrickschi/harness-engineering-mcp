@@ -2,6 +2,16 @@
 
 ## [Unreleased]
 
+### Fixed
+
+- **版本号收拢为单一真理源，消除「server 上报旧版本」隐患**：新增 `src/core/version.ts`，运行时从 `package.json` 回溯读取版本（开发态 / tsup bundle 两态一致）；`src/mcp/server.ts` 与 `src/cli/index.ts` 不再各自硬编码版本字符串。此前 0.3.1 发布时漏改了 `server.ts` 的 fallback，导致 MCP `initialize` 与 stdio banner 仍上报 `v0.3.0`。新增 `test/version.test.ts` 断言上报版本严格等于 `package.json.version`，防止再次漂移。今后发版只改 `package.json`（`npm version` 自动维护）即可。
+
+## 0.3.1 — 2026-05-26
+
+### Fixed
+
+- **MCP server 入口自启检测兼容 npx symlink**（commit `cacc198`）：`isDirectRun()`（`src/mcp/server.ts`）的入口正则此前只匹配 `mcp-server.js` / `server.ts`。当通过 `npx -p harness-engineering-mcp@latest harness-mcp` 启动时，进程入口是 npm 在 macOS/Linux 下创建的软链 `harness-mcp`（无 `.js` 后缀），正则不匹配 → `startMcpServer()` 不触发 → Cursor / Claude Code 报 `MCP error -32000: Connection closed`。正则新增 `harness-mcp(?:-server)?` 分支，npx 软链入口现在能正确自启。Windows 下走 `.js` 路径，本就不受影响。
+
 ## 0.3.0 — 2026-05-25
 
 ### 背景
