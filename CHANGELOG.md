@@ -5,6 +5,7 @@
 ### Fixed
 
 - **版本号收拢为单一真理源，消除「server 上报旧版本」隐患**：新增 `src/core/version.ts`，运行时从 `package.json` 回溯读取版本（开发态 / tsup bundle 两态一致）；`src/mcp/server.ts` 与 `src/cli/index.ts` 不再各自硬编码版本字符串。此前 0.3.1 发布时漏改了 `server.ts` 的 fallback，导致 MCP `initialize` 与 stdio banner 仍上报 `v0.3.0`。新增 `test/version.test.ts` 断言上报版本严格等于 `package.json.version`，防止再次漂移。今后发版只改 `package.json`（`npm version` 自动维护）即可。
+- **修复 CLI 在 ESM 产物下一启动即崩溃**：`tsup.config.ts` 用 `noExternal` 把 `commander`（CJS）打进 ESM bundle 后，其内部 `require("events")` 触发 esbuild 的 `Dynamic require of "events" is not supported`，导致 `dist/cli.js`（即发布版 `npx harness-engineering-mcp <cmd>` 的全部 CLI 命令）自 0.3.0 起一运行就崩。给三个入口的 banner 注入 `createRequire(import.meta.url)`，让 ESM 产物拥有可用的 `require`。MCP server（stdio）不受此 bug 影响，本次一并加固。已验证 `cli --version` 输出 0.3.1、`cli --help` 正常列命令、mcp-server banner 正常。
 
 ## 0.3.1 — 2026-05-26
 
